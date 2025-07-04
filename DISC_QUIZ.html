@@ -1,0 +1,588 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario DISC Completo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .grupo-pregunta {
+            margin-bottom: 20px;
+        }
+        .grupo-pregunta label {
+            display: block;
+            margin: 5px 0;
+        }
+        .resultado {
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+        canvas {
+            max-width: 500px;
+            margin: 20px auto;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .analisis {
+            margin-top: 20px;
+            text-align: left;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cuestionario DISC Completo</h1>
+    <p>El DISC es una de las técnicas de perfilado de personalidad más populares y se utiliza para comprender el comportamiento humano al reclutar, administrar y formar equipos. Selecciona una afirmación que sea <strong>más como tú</strong> y otra que sea <strong>menos como tú</strong> en cada uno de los 24 grupos. Responde con sinceridad para obtener resultados precisos. Esto tomará aproximadamente 10 minutos.</p>
+
+    <form id="formularioDisc">
+        <div class="grupo-pregunta">
+            <h3>Grupo 1</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas1" value="D" required> Asertivo (D)</label>
+            <label><input type="radio" name="mas1" value="I"> Entusiasta (I)</label>
+            <label><input type="radio" name="mas1" value="S"> Paciente (S)</label>
+            <label><input type="radio" name="mas1" value="C"> Analítico (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos1" value="D" required> Asertivo (D)</label>
+            <label><input type="radio" name="menos1" value="I"> Entusiasta (I)</label>
+            <label><input type="radio" name="menos1" value="S"> Paciente (S)</label>
+            <label><input type="radio" name="menos1" value="C"> Analítico (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 2</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas2" value="D" required> Decidido (D)</label>
+            <label><input type="radio" name="mas2" value="I"> Sociable (I)</label>
+            <label><input type="radio" name="mas2" value="S"> Solidario (S)</label>
+            <label><input type="radio" name="mas2" value="C"> Preciso (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos2" value="D" required> Decidido (D)</label>
+            <label><input type="radio" name="menos2" value="I"> Sociable (I)</label>
+            <label><input type="radio" name="menos2" value="S"> Solidario (S)</label>
+            <label><input type="radio" name="menos2" value="C"> Preciso (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 3</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas3" value="D" required> Competitivo (D)</label>
+            <label><input type="radio" name="mas3" value="I"> Optimista (I)</label>
+            <label><input type="radio" name="mas3" value="S"> Estable (S)</label>
+            <label><input type="radio" name="mas3" value="C"> Cauteloso (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos3" value="D" required> Competitivo (D)</label>
+            <label><input type="radio" name="menos3" value="I"> Optimista (I)</label>
+            <label><input type="radio" name="menos3" value="S"> Estable (S)</label>
+            <label><input type="radio" name="menos3" value="C"> Cauteloso (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 4</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas4" value="D" required> Directo (D)</label>
+            <label><input type="radio" name="mas4" value="I"> Persuasivo (I)</label>
+            <label><input type="radio" name="mas4" value="S"> Leal (S)</label>
+            <label><input type="radio" name="mas4" value="C"> Detallista (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos4" value="D" required> Directo (D)</label>
+            <label><input type="radio" name="menos4" value="I"> Persuasivo (I)</label>
+            <label><input type="radio" name="menos4" value="S"> Leal (S)</label>
+            <label><input type="radio" name="menos4" value="C"> Detallista (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 5</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas5" value="D" required> Orientado a resultados (D)</label>
+            <label><input type="radio" name="mas5" value="I"> Colaborativo (I)</label>
+            <label><input type="radio" name="mas5" value="S"> Sincero (S)</label>
+            <label><input type="radio" name="mas5" value="C"> Sistemático (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos5" value="D" required> Orientado a resultados (D)</label>
+            <label><input type="radio" name="menos5" value="I"> Colaborativo (I)</label>
+            <label><input type="radio" name="menos5" value="S"> Sincero (S)</label>
+            <label><input type="radio" name="menos5" value="C"> Sistemático (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 6</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas6" value="D" required> Seguro (D)</label>
+            <label><input type="radio" name="mas6" value="I"> Carismático (I)</label>
+            <label><input type="radio" name="mas6" value="S"> Cooperativo (S)</label>
+            <label><input type="radio" name="mas6" value="C"> Exacto (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos6" value="D" required> Seguro (D)</label>
+            <label><input type="radio" name="menos6" value="I"> Carismático (I)</label>
+            <label><input type="radio" name="menos6" value="S"> Cooperativo (S)</label>
+            <label><input type="radio" name="menos6" value="C"> Exacto (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 7</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas7" value="D" required> Valiente (D)</label>
+            <label><input type="radio" name="mas7" value="I"> Extrovertido (I)</label>
+            <label><input type="radio" name="mas7" value="S"> Confiable (S)</label>
+            <label><input type="radio" name="mas7" value="C"> Objetivo (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos7" value="D" required> Valiente (D)</label>
+            <label><input type="radio" name="menos7" value="I"> Extrovertido (I)</label>
+            <label><input type="radio" name="menos7" value="S"> Confiable (S)</label>
+            <label><input type="radio" name="menos7" value="C"> Objetivo (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 8</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas8" value="D" required> Enfocado en metas (D)</label>
+            <label><input type="radio" name="mas8" value="I"> Inspirador (I)</label>
+            <label><input type="radio" name="mas8" value="S"> Considerado (S)</label>
+            <label><input type="radio" name="mas8" value="C"> Minucioso (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos8" value="D" required> Enfocado en metas (D)</label>
+            <label><input type="radio" name="menos8" value="I"> Inspirador (I)</label>
+            <label><input type="radio" name="menos8" value="S"> Considerado (S)</label>
+            <label><input type="radio" name="menos8" value="C"> Minucioso (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 9</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas9" value="D" required> Independiente (D)</label>
+            <label><input type="radio" name="mas9" value="I"> Conversador (I)</label>
+            <label><input type="radio" name="mas9" value="S"> Empático (S)</label>
+            <label><input type="radio" name="mas9" value="C"> Lógico (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos9" value="D" required> Independiente (D)</label>
+            <label><input type="radio" name="menos9" value="I"> Conversador (I)</label>
+            <label><input type="radio" name="menos9" value="S"> Empático (S)</label>
+            <label><input type="radio" name="menos9" value="C"> Lógico (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 10</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas10" value="D" required> Motivado (D)</label>
+            <label><input type="radio" name="mas10" value="I"> Amigable (I)</label>
+            <label><input type="radio" name="mas10" value="S"> Consistente (S)</label>
+            <label><input type="radio" name="mas10" value="C"> Organizado (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos10" value="D" required> Motivado (D)</label>
+            <label><input type="radio" name="menos10" value="I"> Amigable (I)</label>
+            <label><input type="radio" name="menos10" value="S"> Consistente (S)</label>
+            <label><input type="radio" name="menos10" value="C"> Organizado (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 11</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas11" value="D" required> Enérgico (D)</label>
+            <label><input type="radio" name="mas11" value="I"> Expresivo (I)</label>
+            <label><input type="radio" name="mas11" value="S"> Tranquilo (S)</label>
+            <label><input type="radio" name="mas11" value="C"> Cuidadoso (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos11" value="D" required> Enérgico (D)</label>
+            <label><input type="radio" name="menos11" value="I"> Expresivo (I)</label>
+            <label><input type="radio" name="menos11" value="S"> Tranquilo (S)</label>
+            <label><input type="radio" name="menos11" value="C"> Cuidadoso (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 12</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas12" value="D" required> Arriesgado (D)</label>
+            <label><input type="radio" name="mas12" value="I"> Atractivo (I)</label>
+            <label><input type="radio" name="mas12" value="S"> Comprensivo (S)</label>
+            <label><input type="radio" name="mas12" value="C"> Metódico (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos12" value="D" required> Arriesgado (D)</label>
+            <label><input type="radio" name="menos12" value="I"> Atractivo (I)</label>
+            <label><input type="radio" name="menos12" value="S"> Comprensivo (S)</label>
+            <label><input type="radio" name="menos12" value="C"> Metódico (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 13</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas13" value="D" required> Resolutivo (D)</label>
+            <label><input type="radio" name="mas13" value="I"> Animado (I)</label>
+            <label><input type="radio" name="mas13" value="S"> Amable (S)</label>
+            <label><input type="radio" name="mas13" value="C"> Disciplinado (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos13" value="D" required> Resolutivo (D)</label>
+            <label><input type="radio" name="menos13" value="I"> Animado (I)</label>
+            <label><input type="radio" name="menos13" value="S"> Amable (S)</label>
+            <label><input type="radio" name="menos13" value="C"> Disciplinado (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 14</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas14" value="D" required> Intrépido (D)</label>
+            <label><input type="radio" name="mas14" value="I"> Comunicativo (I)</label>
+            <label><input type="radio" name="mas14" value="S"> Servicial (S)</label>
+            <label><input type="radio" name="mas14" value="C"> Ordenado (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos14" value="D" required> Intrépido (D)</label>
+            <label><input type="radio" name="menos14" value="I"> Comunicativo (I)</label>
+            <label><input type="radio" name="menos14" value="S"> Servicial (S)</label>
+            <label><input type="radio" name="menos14" value="C"> Ordenado (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 15</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas15" value="D" required> Audaz (D)</label>
+            <label><input type="radio" name="mas15" value="I"> Motivador (I)</label>
+            <label><input type="radio" name="mas15" value="S"> Persistente (S)</label>
+            <label><input type="radio" name="mas15" value="C"> Reflexivo (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos15" value="D" required> Audaz (D)</label>
+            <label><input type="radio" name="menos15" value="I"> Motivador (I)</label>
+            <label><input type="radio" name="menos15" value="S"> Persistente (S)</label>
+            <label><input type="radio" name="menos15" value="C"> Reflexivo (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 16</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas16" value="D" required> Proactivo (D)</label>
+            <label><input type="radio" name="mas16" value="I"> Cordial (I)</label>
+            <label><input type="radio" name="mas16" value="S"> Apacible (S)</label>
+            <label><input type="radio" name="mas16" value="C"> Prudente (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos16" value="D" required> Proactivo (D)</label>
+            <label><input type="radio" name="menos16" value="I"> Cordial (I)</label>
+            <label><input type="radio" name="menos16" value="S"> Apacible (S)</label>
+            <label><input type="radio" name="menos16" value="C"> Prudente (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 17</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas17" value="D" required> Valeroso (D)</label>
+            <label><input type="radio" name="mas17" value="I"> Positivo (I)</label>
+            <label><input type="radio" name="mas17" value="S"> Constante (S)</label>
+            <label><input type="radio" name="mas17" value="C"> Meticuloso (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos17" value="D" required> Valeroso (D)</label>
+            <label><input type="radio" name="menos17" value="I"> Positivo (I)</label>
+            <label><input type="radio" name="menos17" value="S"> Constante (S)</label>
+            <label><input type="radio" name="menos17" value="C"> Meticuloso (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 18</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas18" value="D" required> Resuelto (D)</label>
+            <label><input type="radio" name="mas18" value="I"> Simpático (I)</label>
+            <label><input type="radio" name="mas18" value="S"> Bondadoso (S)</label>
+            <label><input type="radio" name="mas18" value="C"> Estructurado (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos18" value="D" required> Resuelto (D)</label>
+            <label><input type="radio" name="menos18" value="I"> Simpático (I)</label>
+            <label><input type="radio" name="menos18" value="S"> Bondadoso (S)</label>
+            <label><input type="radio" name="menos18" value="C"> Estructurado (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 19</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas19" value="D" required> Firme (D)</label>
+            <label><input type="radio" name="mas19" value="I"> Agradable (I)</label>
+            <label><input type="radio" name="mas19" value="S"> Sereno (S)</label>
+            <label><input type="radio" name="mas19" value="C"> Racional (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos19" value="D" required> Firme (D)</label>
+            <label><input type="radio" name="menos19" value="I"> Agradable (I)</label>
+            <label><input type="radio" name="menos19" value="S"> Sereno (S)</label>
+            <label><input type="radio" name="menos19" value="C"> Racional (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 20</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas20" value="D" required> Determinado (D)</label>
+            <label><input type="radio" name="mas20" value="I"> Vivaz (I)</label>
+            <label><input type="radio" name="mas20" value="S"> Apoyo (S)</label>
+            <label><input type="radio" name="mas20" value="C"> Escrupuloso (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos20" value="D" required> Determinado (D)</label>
+            <label><input type="radio" name="menos20" value="I"> Vivaz (I)</label>
+            <label><input type="radio" name="menos20" value="S"> Apoyo (S)</label>
+            <label><input type="radio" name="menos20" value="C"> Escrupuloso (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 21</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas21" value="D" required> Osado (D)</label>
+            <label><input type="radio" name="mas21" value="I"> Encantador (I)</label>
+            <label><input type="radio" name="mas21" value="S"> Equilibrado (S)</label>
+            <label><input type="radio" name="mas21" value="C"> Perseverante (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos21" value="D" required> Osado (D)</label>
+            <label><input type="radio" name="menos21" value="I"> Encantador (I)</label>
+            <label><input type="radio" name="menos21" value="S"> Equilibrado (S)</label>
+            <label><input type="radio" name="menos21" value="C"> Perseverante (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 22</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas22" value="D" required> Ambicioso (D)</label>
+            <label><input type="radio" name="mas22" value="I"> Ingenioso (I)</label>
+            <label><input type="radio" name="mas22" value="S"> Afable (S)</label>
+            <label><input type="radio" name="mas22" value="C"> Consciente (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos22" value="D" required> Ambicioso (D)</label>
+            <label><input type="radio" name="menos22" value="I"> Ingenioso (I)</label>
+            <label><input type="radio" name="menos22" value="S"> Afable (S)</label>
+            <label><input type="radio" name="menos22" value="C"> Consciente (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 23</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas23" value="D" required> Resiliente (D)</label>
+            <label><input type="radio" name="mas23" value="I"> Dinámico (I)</label>
+            <label><input type="radio" name="mas23" value="S"> Tolerante (S)</label>
+            <label><input type="radio" name="mas23" value="C"> Sistemático (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos23" value="D" required> Resiliente (D)</label>
+            <label><input type="radio" name="menos23" value="I"> Dinámico (I)</label>
+            <label><input type="radio" name="menos23" value="S"> Tolerante (S)</label>
+            <label><input type="radio" name="menos23" value="C"> Sistemático (C)</label>
+        </div>
+        <div class="grupo-pregunta">
+            <h3>Grupo 24</h3>
+            <p>Elige cuál es más como tú:</p>
+            <label><input type="radio" name="mas24" value="D" required> Iniciador (D)</label>
+            <label><input type="radio" name="mas24" value="I"> Magnético (I)</label>
+            <label><input type="radio" name="mas24" value="S"> Apaciguador (S)</label>
+            <label><input type="radio" name="mas24" value="C"> Riguroso (C)</label>
+            <p>Elige cuál es menos como tú:</p>
+            <label><input type="radio" name="menos24" value="D" required> Iniciador (D)</label>
+            <label><input type="radio" name="menos24" value="I"> Magnético (I)</label>
+            <label><input type="radio" name="menos24" value="S"> Apaciguador (S)</label>
+            <label><input type="radio" name="menos24" value="C"> Riguroso (C)</label>
+        </div>
+        <button type="submit">Enviar</button>
+    </form>
+
+    <div class="resultado" id="resultado">
+        <h2>Tu Serie de Perfiles DISC</h2>
+        <p id="puntuaciones"></p>
+        <div class="analisis" id="analisis"></div>
+        <canvas id="graficoDisc"></canvas>
+    </div>
+
+    <script>
+        document.getElementById('formularioDisc').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Inicializar puntuaciones para los perfiles
+            let interno = { D: 0, I: 0, S: 0, C: 0 };
+            let externo = { D: 0, I: 0, S: 0, C: 0 };
+            let resumen = { D: 0, I: 0, S: 0, C: 0 };
+
+            // Recolectar respuestas
+            for (let i = 1; i <= 24; i++) {
+                let mas = document.querySelector(`input[name="mas${i}"]:checked`).value;
+                let menos = document.querySelector(`input[name="menos${i}"]:checked`).value;
+
+                // Asignar puntajes: más peso en Interno para primeras 12 preguntas, Externo para últimas 12
+                if (i <= 12) {
+                    interno[mas] += 1.5;
+                    interno[menos] -= 1.5;
+                    externo[mas] += 0.5;
+                    externo[menos] -= 0.5;
+                } else {
+                    interno[mas] += 0.5;
+                    interno[menos] -= 0.5;
+                    externo[mas] += 1.5;
+                    externo[menos] -= 1.5;
+                }
+            }
+
+            // Calcular Resumen (promedio de Interno y Externo)
+            for (let factor in interno) {
+                resumen[factor] = (interno[factor] + externo[factor]) / 2;
+            }
+
+            // Normalizar puntuaciones a porcentajes (escala 0-100)
+            const puntuacionMax = 24 * 1.5;
+            const puntuacionMin = -24 * 1.5;
+            const rango = puntuacionMax - puntuacionMin;
+            let porcentajesInterno = {};
+            let porcentajesExterno = {};
+            let porcentajesResumen = {};
+            for (let factor in interno) {
+                porcentajesInterno[factor] = Math.round(((interno[factor] - puntuacionMin) / rango) * 100);
+                porcentajesExterno[factor] = Math.round(((externo[factor] - puntuacionMin) / rango) * 100);
+                porcentajesResumen[factor] = Math.round(((resumen[factor] - puntuacionMin) / rango) * 100);
+            }
+
+            // Mostrar puntuaciones
+            document.getElementById('puntuaciones').innerText = 
+                `Perfil Interno:\nDominio (D): ${porcentajesInterno.D}%\nInfluencia (I): ${porcentajesInterno.I}%\nEstabilidad (S): ${porcentajesInterno.S}%\nCumplimiento (C): ${porcentajesInterno.C}%\n\n` +
+                `Perfil Externo:\nDominio (D): ${porcentajesExterno.D}%\nInfluencia (I): ${porcentajesExterno.I}%\nEstabilidad (S): ${porcentajesExterno.S}%\nCumplimiento (C): ${porcentajesExterno.C}%\n\n` +
+                `Perfil Resumen:\nDominio (D): ${porcentajesResumen.D}%\nInfluencia (I): ${porcentajesResumen.I}%\nEstabilidad (S): ${porcentajesResumen.S}%\nCumplimiento (C): ${porcentajesResumen.C}%`;
+
+            // Análisis completo
+            let analisisText = "Interpretación de tu Serie de Perfiles DISC:\n\n";
+            analisisText += "El DISC evalúa cuatro factores principales: Dominio (D), Influencia (I), Estabilidad (S) y Cumplimiento (C). Estos factores describen tu comportamiento natural y adaptado:\n";
+            analisisText += "- Dominio (D): Impulso, determinación y confianza. Indica independencia, ambición y competitividad.\n";
+            analisisText += "- Influencia (I): Sociabilidad y entusiasmo. Refleja extroversión y preferencia por evitar confrontaciones.\n";
+            analisisText += "- Estabilidad (S): Paciencia y consistencia. Sugiere fiabilidad y resistencia al cambio.\n";
+            analisisText += "- Cumplimiento (C): Precisión y estructura. Se asocia con análisis y organización.\n\n";
+
+            let maxInterno = Object.keys(porcentajesInterno).reduce((a, b) => porcentajesInterno[a] > porcentajesInterno[b] ? a : b);
+            let maxExterno = Object.keys(porcentajesExterno).reduce((a, b) => porcentajesExterno[a] > porcentajesExterno[b] ? a : b);
+            let maxResumen = Object.keys(porcentajesResumen).reduce((a, b) => porcentajesResumen[a] > porcentajesResumen[b] ? a : b);
+
+            analisisText += "Perfil Interno: Tu estilo natural (o bajo presión) es dominado por " + maxInterno + " (" + porcentajesInterno[maxInterno] + "%). ";
+            analisisText += maxInterno === 'D' ? "Eres decidido, orientado a resultados y competitivo." :
+                           maxInterno === 'I' ? "Eres entusiasta, sociable y expresivo." :
+                           maxInterno === 'S' ? "Eres paciente, confiable y estable." :
+                           "Eres analítico, detallista y organizado." + "\n";
+
+            analisisText += "Perfil Externo: Tu estilo adaptado (especialmente en el trabajo) está dominado por " + maxExterno + " (" + porcentajesExterno[maxExterno] + "%). ";
+            analisisText += maxExterno === 'D' ? "Te adaptas mostrando asertividad y liderazgo." :
+                           maxExterno === 'I' ? "Te adaptas con carisma y persuasión." :
+                           maxExterno === 'S' ? "Te adaptas con apoyo y estabilidad." :
+                           "Te adaptas con precisión y estructura." + "\n";
+
+            analisisText += "Perfil Resumen: Tu comportamiento general está dominado por " + maxResumen + " (" + porcentajesResumen[maxResumen] + "%), reflejando tu estilo típico.\n\n";
+
+            // Sub-características
+            let subCaracteristica = "";
+            if (maxInterno === 'D' && porcentajesInterno.D > porcentajesInterno.I + 10) subCaracteristica = "Eficiencia (D/I)";
+            else if (maxInterno === 'D' && porcentajesInterno.D > porcentajesInterno.S + 10) subCaracteristica = "Auto-motivación (D/S)";
+            else if (maxInterno === 'D' && porcentajesInterno.D > porcentajesInterno.C + 10) subCaracteristica = "Independencia (D/C)";
+            else if (maxInterno === 'I' && porcentajesInterno.I > porcentajesInterno.D + 10) subCaracteristica = "Amabilidad (I/D)";
+            else if (maxInterno === 'I' && porcentajesInterno.I > porcentajesInterno.S + 10) subCaracteristica = "Entusiasmo (I/S)";
+            else if (maxInterno === 'I' && porcentajesInterno.I > porcentajesInterno.C + 10) subCaracteristica = "Auto-Confianza (I/C)";
+            else if (maxInterno === 'S' && porcentajesInterno.S > porcentajesInterno.D + 10) subCaracteristica = "Paciencia (S/D)";
+            else if (maxInterno === 'S' && porcentajesInterno.S > porcentajesInterno.I + 10) subCaracteristica = "Consideración (S/I)";
+            else if (maxInterno === 'S' && porcentajesInterno.S > porcentajesInterno.C + 10) subCaracteristica = "Persistencia (S/C)";
+            else if (maxInterno === 'C' && porcentajesInterno.C > porcentajesInterno.D + 10) subCaracteristica = "Cooperación (C/D)";
+            else if (maxInterno === 'C' && porcentajesInterno.C > porcentajesInterno.I + 10) subCaracteristica = "Precisión (C/I)";
+            else if (maxInterno === 'C' && porcentajesInterno.C > porcentajesInterno.S + 10) subCaracteristica = "Sensibilidad (C/S)";
+            if (subCaracteristica) analisisText += "Sub-característica probable: " + subCaracteristica + ". ";
+
+            // Cambios entre perfiles
+            let cambioMax = Math.abs(porcentajesInterno[maxInterno] - porcentajesExterno[maxExterno]);
+            if (cambioMax > 25) {
+                analisisText += "Hay un cambio significativo (>25%) entre tu Perfil Interno y Externo, sugiriendo que te adaptas considerablemente a tu entorno, lo que puede generar estrés si se sostiene a largo plazo.\n";
+                if (porcentajesExterno.D > porcentajesInterno.D + 25) analisisText += "- Cambio ascendente en Dominio: Te presentas más asertivo de lo natural.\n";
+                if (porcentajesExterno.I > porcentajesInterno.I + 25) analisisText += "- Cambio ascendente en Influencia: Te adaptas con más sociabilidad.\n";
+                if (porcentajesExterno.S > porcentajesInterno.S + 25) analisisText += "- Cambio ascendente en Estabilidad: Buscas más estabilidad en tu rol.\n";
+                if (porcentajesExterno.C > porcentajesInterno.C + 25) analisisText += "- Cambio ascendente en Cumplimiento: Te enfocas más en precisión.\n";
+            } else {
+                analisisText += "Tu Perfil Interno y Externo son consistentes, indicando un estilo estable.\n";
+            }
+
+            // Perfiles comunes
+            let perfilComun = "";
+            if (porcentajesInterno.D > 70) perfilComun = "Alto Dominio (D/ISC) - Autócrata";
+            else if (porcentajesInterno.I > 70) perfilComun = "Alta Influencia (I/DSC) - Comunicador";
+            else if (porcentajesInterno.S > 70) perfilComun = "Alta Estabilidad (S/DIC) - Estable";
+            else if (porcentajesInterno.C > 70) perfilComun = "Alto Cumplimiento (C/DIS) - Diplomático";
+            else if (porcentajesInterno.D > 60 && porcentajesInterno.I > 60) perfilComun = "DI/SC - Proactivo, autoconfiado";
+            else if (porcentajesInterno.D > 60 && porcentajesInterno.S > 60) perfilComun = "DS/IC - Determinado, resiliente";
+            else if (porcentajesInterno.D > 60 && porcentajesInterno.C > 60) perfilComun = "DC/IS - Autosuficiente, objetivo";
+            else if (porcentajesInterno.I > 60 && porcentajesInterno.S > 60) perfilComun = "IS/DC - Simpático, solidario";
+            else if (porcentajesInterno.I > 60 && porcentajesInterno.C > 60) perfilComun = "IC/DS - Complaciente, diplomático";
+            else if (porcentajesInterno.S > 60 && porcentajesInterno.C > 60) perfilComun = "SC/DI - Analítico, paciente";
+            if (perfilComun) analisisText += "Perfil común: " + perfilComun + ".\n";
+
+            document.getElementById('analisis').innerText = analisisText;
+
+            // Mostrar sección de resultados
+            document.getElementById('resultado').style.display = 'block';
+
+            // Crear gráfico de radar
+            const ctx = document.getElementById('graficoDisc').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Dominio (D)', 'Influencia (I)', 'Estabilidad (S)', 'Cumplimiento (C)'],
+                    datasets: [
+                        {
+                            label: 'Perfil Interno',
+                            data: [porcentajesInterno.D, porcentajesInterno.I, porcentajesInterno.S, porcentajesInterno.C],
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Perfil Externo',
+                            data: [porcentajesExterno.D, porcentajesExterno.I, porcentajesExterno.S, porcentajesExterno.C],
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Perfil Resumen',
+                            data: [porcentajesResumen.D, porcentajesResumen.I, porcentajesResumen.S, porcentajesResumen.C],
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    scale: {
+                        ticks: {
+                            beginAtZero: true,
+                            max: 100,
+                            stepSize: 20
+                        }
+                    },
+                    elements: {
+                        line: {
+                            tension: 0
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
