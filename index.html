@@ -1,587 +1,976 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuestionario DISC Completo</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <title>Discus Clásico - Evaluación de Personalidad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+        body { font-family: 'Helvetica', sans-serif; }
+        .section { margin-bottom: 2rem; }
+        .section-title { font-size: 1.5rem; font-weight: bold; color: #2d3748; }
+        .subsection-title { font-size: 1.25rem; font-weight: bold; color: #4a5568; }
+        .list-item { margin-bottom: 0.5rem; }
+        .profile-graph {
+            width: 300px;
+            height: 200px;
+            border: 2px solid #ccc;
+            margin: 10px 0;
+            position: relative;
+            background: #f9f9f9;
         }
-        h1, h2 {
-            text-align: center;
+        .graph-line {
+            position: absolute;
+            height: 2px;
+            background: #333;
         }
-        .grupo-pregunta {
-            margin-bottom: 20px;
+        .graph-point {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
         }
-        .grupo-pregunta label {
-            display: block;
-            margin: 5px 0;
-        }
-        .resultado {
-            margin-top: 20px;
-            text-align: center;
+        .disc-d { background-color: #dc3545; }
+        .disc-i { background-color: #ffc107; }
+        .disc-s { background-color: #28a745; }
+        .disc-c { background-color: #007bff; }
+        .evaluation-container {
             display: none;
         }
-        canvas {
-            max-width: 500px;
-            margin: 20px auto;
+        .evaluation-container.active {
+            display: block;
         }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
+        .hidden-section {
+            display: none;
         }
-        .analisis {
-            margin-top: 20px;
+        .question-block {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .question-block h3 {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            margin: 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .question-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .question-table th {
+            background: #f1f3f4;
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .question-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .question-table td:first-child {
+            width: 60%;
             text-align: left;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
+        }
+        .question-table td:not(:first-child) {
+            text-align: center;
+            width: 20%;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
-<body>
-    <h1>Cuestionario DISC Completo</h1>
-    <p>El DISC es una de las técnicas de perfilado de personalidad más populares y se utiliza para comprender el comportamiento humano al reclutar, administrar y formar equipos. Selecciona una afirmación que sea <strong>más como tú</strong> y otra que sea <strong>menos como tú</strong> en cada uno de los 24 grupos. Responde con sinceridad para obtener resultados precisos. Esto tomará aproximadamente 10 minutos.</p>
-
-    <form id="formularioDisc">
-        <div class="grupo-pregunta">
-            <h3>Grupo 1</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas1" value="D" required> Asertivo (D)</label>
-            <label><input type="radio" name="mas1" value="I"> Entusiasta (I)</label>
-            <label><input type="radio" name="mas1" value="S"> Paciente (S)</label>
-            <label><input type="radio" name="mas1" value="C"> Analítico (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos1" value="D" required> Asertivo (D)</label>
-            <label><input type="radio" name="menos1" value="I"> Entusiasta (I)</label>
-            <label><input type="radio" name="menos1" value="S"> Paciente (S)</label>
-            <label><input type="radio" name="menos1" value="C"> Analítico (C)</label>
+<body class="bg-gray-100">
+    <!-- Evaluation Section -->
+    <div id="evaluation-section" class="evaluation-container active">
+        <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg mt-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">Discus Clásico</h1>
+                <h2 class="text-2xl font-semibold text-gray-700 mt-2">Evaluación de Personalidad</h2>
+            </div>
+            <!-- Candidate Information -->
+            <div class="section bg-gray-50 p-6 rounded-lg mb-6">
+                <h2 class="section-title mb-4">Información del Candidato</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo:</label>
+                        <input type="text" id="candidateName" class="form-control" placeholder="Ingrese su nombre completo">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Análisis:</label>
+                        <input type="date" id="analysisDate" class="form-control" value="2025-08-11">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Género:</label>
+                        <select id="gender" class="form-control">
+                            <option value="">Seleccione...</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Posición/Cargo:</label>
+                        <input type="text" id="position" class="form-control" placeholder="Su posición actual">
+                    </div>
+                </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+            </div>
+            <p class="text-center text-sm text-gray-600 mb-6">Progreso: <span id="progressText">0 de 24 bloques completados</span></p>
+            <!-- Instructions -->
+            <div class="bg-blue-50 p-6 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-blue-900 mb-3">Instrucciones de Evaluación</h3>
+                <p class="text-blue-800 mb-2">Para cada bloque de 4 declaraciones:</p>
+                <ul class="list-disc list-inside text-blue-800 text-sm">
+                    <li>Seleccione UNA declaración en la columna "Más" que mejor lo describa</li>
+                    <li>Seleccione UNA declaración en la columna "Menos" que menos lo describa</li>
+                    <li>No puede seleccionar la misma declaración para ambas columnas</li>
+                    <li>Responda instintivamente, sin analizar demasiado</li>
+                </ul>
+            </div>
+            <!-- Questions Container -->
+            <div id="questionsContainer"></div>
+            <div class="text-center mt-6">
+                <button id="generateReport" class="btn-primary" onclick="generateReport()" disabled>
+                    Generar Informe Completo
+                </button>
+            </div>
         </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 2</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas2" value="D" required> Decidido (D)</label>
-            <label><input type="radio" name="mas2" value="I"> Sociable (I)</label>
-            <label><input type="radio" name="mas2" value="S"> Solidario (S)</label>
-            <label><input type="radio" name="mas2" value="C"> Preciso (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos2" value="D" required> Decidido (D)</label>
-            <label><input type="radio" name="menos2" value="I"> Sociable (I)</label>
-            <label><input type="radio" name="menos2" value="S"> Solidario (S)</label>
-            <label><input type="radio" name="menos2" value="C"> Preciso (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 3</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas3" value="D" required> Competitivo (D)</label>
-            <label><input type="radio" name="mas3" value="I"> Optimista (I)</label>
-            <label><input type="radio" name="mas3" value="S"> Estable (S)</label>
-            <label><input type="radio" name="mas3" value="C"> Cauteloso (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos3" value="D" required> Competitivo (D)</label>
-            <label><input type="radio" name="menos3" value="I"> Optimista (I)</label>
-            <label><input type="radio" name="menos3" value="S"> Estable (S)</label>
-            <label><input type="radio" name="menos3" value="C"> Cauteloso (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 4</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas4" value="D" required> Directo (D)</label>
-            <label><input type="radio" name="mas4" value="I"> Persuasivo (I)</label>
-            <label><input type="radio" name="mas4" value="S"> Leal (S)</label>
-            <label><input type="radio" name="mas4" value="C"> Detallista (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos4" value="D" required> Directo (D)</label>
-            <label><input type="radio" name="menos4" value="I"> Persuasivo (I)</label>
-            <label><input type="radio" name="menos4" value="S"> Leal (S)</label>
-            <label><input type="radio" name="menos4" value="C"> Detallista (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 5</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas5" value="D" required> Orientado a resultados (D)</label>
-            <label><input type="radio" name="mas5" value="I"> Colaborativo (I)</label>
-            <label><input type="radio" name="mas5" value="S"> Sincero (S)</label>
-            <label><input type="radio" name="mas5" value="C"> Sistemático (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos5" value="D" required> Orientado a resultados (D)</label>
-            <label><input type="radio" name="menos5" value="I"> Colaborativo (I)</label>
-            <label><input type="radio" name="menos5" value="S"> Sincero (S)</label>
-            <label><input type="radio" name="menos5" value="C"> Sistemático (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 6</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas6" value="D" required> Seguro (D)</label>
-            <label><input type="radio" name="mas6" value="I"> Carismático (I)</label>
-            <label><input type="radio" name="mas6" value="S"> Cooperativo (S)</label>
-            <label><input type="radio" name="mas6" value="C"> Exacto (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos6" value="D" required> Seguro (D)</label>
-            <label><input type="radio" name="menos6" value="I"> Carismático (I)</label>
-            <label><input type="radio" name="menos6" value="S"> Cooperativo (S)</label>
-            <label><input type="radio" name="menos6" value="C"> Exacto (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 7</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas7" value="D" required> Valiente (D)</label>
-            <label><input type="radio" name="mas7" value="I"> Extrovertido (I)</label>
-            <label><input type="radio" name="mas7" value="S"> Confiable (S)</label>
-            <label><input type="radio" name="mas7" value="C"> Objetivo (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos7" value="D" required> Valiente (D)</label>
-            <label><input type="radio" name="menos7" value="I"> Extrovertido (I)</label>
-            <label><input type="radio" name="menos7" value="S"> Confiable (S)</label>
-            <label><input type="radio" name="menos7" value="C"> Objetivo (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 8</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas8" value="D" required> Enfocado en metas (D)</label>
-            <label><input type="radio" name="mas8" value="I"> Inspirador (I)</label>
-            <label><input type="radio" name="mas8" value="S"> Considerado (S)</label>
-            <label><input type="radio" name="mas8" value="C"> Minucioso (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos8" value="D" required> Enfocado en metas (D)</label>
-            <label><input type="radio" name="menos8" value="I"> Inspirador (I)</label>
-            <label><input type="radio" name="menos8" value="S"> Considerado (S)</label>
-            <label><input type="radio" name="menos8" value="C"> Minucioso (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 9</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas9" value="D" required> Independiente (D)</label>
-            <label><input type="radio" name="mas9" value="I"> Conversador (I)</label>
-            <label><input type="radio" name="mas9" value="S"> Empático (S)</label>
-            <label><input type="radio" name="mas9" value="C"> Lógico (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos9" value="D" required> Independiente (D)</label>
-            <label><input type="radio" name="menos9" value="I"> Conversador (I)</label>
-            <label><input type="radio" name="menos9" value="S"> Empático (S)</label>
-            <label><input type="radio" name="menos9" value="C"> Lógico (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 10</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas10" value="D" required> Motivado (D)</label>
-            <label><input type="radio" name="mas10" value="I"> Amigable (I)</label>
-            <label><input type="radio" name="mas10" value="S"> Consistente (S)</label>
-            <label><input type="radio" name="mas10" value="C"> Organizado (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos10" value="D" required> Motivado (D)</label>
-            <label><input type="radio" name="menos10" value="I"> Amigable (I)</label>
-            <label><input type="radio" name="menos10" value="S"> Consistente (S)</label>
-            <label><input type="radio" name="menos10" value="C"> Organizado (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 11</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas11" value="D" required> Enérgico (D)</label>
-            <label><input type="radio" name="mas11" value="I"> Expresivo (I)</label>
-            <label><input type="radio" name="mas11" value="S"> Tranquilo (S)</label>
-            <label><input type="radio" name="mas11" value="C"> Cuidadoso (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos11" value="D" required> Enérgico (D)</label>
-            <label><input type="radio" name="menos11" value="I"> Expresivo (I)</label>
-            <label><input type="radio" name="menos11" value="S"> Tranquilo (S)</label>
-            <label><input type="radio" name="menos11" value="C"> Cuidadoso (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 12</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas12" value="D" required> Arriesgado (D)</label>
-            <label><input type="radio" name="mas12" value="I"> Atractivo (I)</label>
-            <label><input type="radio" name="mas12" value="S"> Comprensivo (S)</label>
-            <label><input type="radio" name="mas12" value="C"> Metódico (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos12" value="D" required> Arriesgado (D)</label>
-            <label><input type="radio" name="menos12" value="I"> Atractivo (I)</label>
-            <label><input type="radio" name="menos12" value="S"> Comprensivo (S)</label>
-            <label><input type="radio" name="menos12" value="C"> Metódico (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 13</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas13" value="D" required> Resolutivo (D)</label>
-            <label><input type="radio" name="mas13" value="I"> Animado (I)</label>
-            <label><input type="radio" name="mas13" value="S"> Amable (S)</label>
-            <label><input type="radio" name="mas13" value="C"> Disciplinado (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos13" value="D" required> Resolutivo (D)</label>
-            <label><input type="radio" name="menos13" value="I"> Animado (I)</label>
-            <label><input type="radio" name="menos13" value="S"> Amable (S)</label>
-            <label><input type="radio" name="menos13" value="C"> Disciplinado (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 14</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas14" value="D" required> Intrépido (D)</label>
-            <label><input type="radio" name="mas14" value="I"> Comunicativo (I)</label>
-            <label><input type="radio" name="mas14" value="S"> Servicial (S)</label>
-            <label><input type="radio" name="mas14" value="C"> Ordenado (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos14" value="D" required> Intrépido (D)</label>
-            <label><input type="radio" name="menos14" value="I"> Comunicativo (I)</label>
-            <label><input type="radio" name="menos14" value="S"> Servicial (S)</label>
-            <label><input type="radio" name="menos14" value="C"> Ordenado (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 15</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas15" value="D" required> Audaz (D)</label>
-            <label><input type="radio" name="mas15" value="I"> Motivador (I)</label>
-            <label><input type="radio" name="mas15" value="S"> Persistente (S)</label>
-            <label><input type="radio" name="mas15" value="C"> Reflexivo (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos15" value="D" required> Audaz (D)</label>
-            <label><input type="radio" name="menos15" value="I"> Motivador (I)</label>
-            <label><input type="radio" name="menos15" value="S"> Persistente (S)</label>
-            <label><input type="radio" name="menos15" value="C"> Reflexivo (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 16</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas16" value="D" required> Proactivo (D)</label>
-            <label><input type="radio" name="mas16" value="I"> Cordial (I)</label>
-            <label><input type="radio" name="mas16" value="S"> Apacible (S)</label>
-            <label><input type="radio" name="mas16" value="C"> Prudente (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos16" value="D" required> Proactivo (D)</label>
-            <label><input type="radio" name="menos16" value="I"> Cordial (I)</label>
-            <label><input type="radio" name="menos16" value="S"> Apacible (S)</label>
-            <label><input type="radio" name="menos16" value="C"> Prudente (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 17</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas17" value="D" required> Valeroso (D)</label>
-            <label><input type="radio" name="mas17" value="I"> Positivo (I)</label>
-            <label><input type="radio" name="mas17" value="S"> Constante (S)</label>
-            <label><input type="radio" name="mas17" value="C"> Meticuloso (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos17" value="D" required> Valeroso (D)</label>
-            <label><input type="radio" name="menos17" value="I"> Positivo (I)</label>
-            <label><input type="radio" name="menos17" value="S"> Constante (S)</label>
-            <label><input type="radio" name="menos17" value="C"> Meticuloso (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 18</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas18" value="D" required> Resuelto (D)</label>
-            <label><input type="radio" name="mas18" value="I"> Simpático (I)</label>
-            <label><input type="radio" name="mas18" value="S"> Bondadoso (S)</label>
-            <label><input type="radio" name="mas18" value="C"> Estructurado (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos18" value="D" required> Resuelto (D)</label>
-            <label><input type="radio" name="menos18" value="I"> Simpático (I)</label>
-            <label><input type="radio" name="menos18" value="S"> Bondadoso (S)</label>
-            <label><input type="radio" name="menos18" value="C"> Estructurado (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 19</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas19" value="D" required> Firme (D)</label>
-            <label><input type="radio" name="mas19" value="I"> Agradable (I)</label>
-            <label><input type="radio" name="mas19" value="S"> Sereno (S)</label>
-            <label><input type="radio" name="mas19" value="C"> Racional (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos19" value="D" required> Firme (D)</label>
-            <label><input type="radio" name="menos19" value="I"> Agradable (I)</label>
-            <label><input type="radio" name="menos19" value="S"> Sereno (S)</label>
-            <label><input type="radio" name="menos19" value="C"> Racional (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 20</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas20" value="D" required> Determinado (D)</label>
-            <label><input type="radio" name="mas20" value="I"> Vivaz (I)</label>
-            <label><input type="radio" name="mas20" value="S"> Apoyo (S)</label>
-            <label><input type="radio" name="mas20" value="C"> Escrupuloso (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos20" value="D" required> Determinado (D)</label>
-            <label><input type="radio" name="menos20" value="I"> Vivaz (I)</label>
-            <label><input type="radio" name="menos20" value="S"> Apoyo (S)</label>
-            <label><input type="radio" name="menos20" value="C"> Escrupuloso (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 21</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas21" value="D" required> Osado (D)</label>
-            <label><input type="radio" name="mas21" value="I"> Encantador (I)</label>
-            <label><input type="radio" name="mas21" value="S"> Equilibrado (S)</label>
-            <label><input type="radio" name="mas21" value="C"> Perseverante (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos21" value="D" required> Osado (D)</label>
-            <label><input type="radio" name="menos21" value="I"> Encantador (I)</label>
-            <label><input type="radio" name="menos21" value="S"> Equilibrado (S)</label>
-            <label><input type="radio" name="menos21" value="C"> Perseverante (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 22</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas22" value="D" required> Ambicioso (D)</label>
-            <label><input type="radio" name="mas22" value="I"> Ingenioso (I)</label>
-            <label><input type="radio" name="mas22" value="S"> Afable (S)</label>
-            <label><input type="radio" name="mas22" value="C"> Consciente (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos22" value="D" required> Ambicioso (D)</label>
-            <label><input type="radio" name="menos22" value="I"> Ingenioso (I)</label>
-            <label><input type="radio" name="menos22" value="S"> Afable (S)</label>
-            <label><input type="radio" name="menos22" value="C"> Consciente (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 23</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas23" value="D" required> Resiliente (D)</label>
-            <label><input type="radio" name="mas23" value="I"> Dinámico (I)</label>
-            <label><input type="radio" name="mas23" value="S"> Tolerante (S)</label>
-            <label><input type="radio" name="mas23" value="C"> Sistemático (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos23" value="D" required> Resiliente (D)</label>
-            <label><input type="radio" name="menos23" value="I"> Dinámico (I)</label>
-            <label><input type="radio" name="menos23" value="S"> Tolerante (S)</label>
-            <label><input type="radio" name="menos23" value="C"> Sistemático (C)</label>
-        </div>
-        <div class="grupo-pregunta">
-            <h3>Grupo 24</h3>
-            <p>Elige cuál es más como tú:</p>
-            <label><input type="radio" name="mas24" value="D" required> Iniciador (D)</label>
-            <label><input type="radio" name="mas24" value="I"> Magnético (I)</label>
-            <label><input type="radio" name="mas24" value="S"> Apaciguador (S)</label>
-            <label><input type="radio" name="mas24" value="C"> Riguroso (C)</label>
-            <p>Elige cuál es menos como tú:</p>
-            <label><input type="radio" name="menos24" value="D" required> Iniciador (D)</label>
-            <label><input type="radio" name="menos24" value="I"> Magnético (I)</label>
-            <label><input type="radio" name="menos24" value="S"> Apaciguador (S)</label>
-            <label><input type="radio" name="menos24" value="C"> Riguroso (C)</label>
-        </div>
-        <button type="submit">Enviar</button>
-    </form>
-
-    <div class="resultado" id="resultado">
-        <h2>Tu Serie de Perfiles DISC</h2>
-        <p id="puntuaciones"></p>
-        <div class="analisis" id="analisis"></div>
-        <canvas id="graficoDisc"></canvas>
     </div>
-
+    <!-- Report Section -->
+    <div id="report-section" class="evaluation-container">
+        <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg mt-8">
+            <div id="reportContent"></div>
+        </div>
+    </div>
     <script>
-        document.getElementById('formularioDisc').addEventListener('submit', function(e) {
-            e.preventDefault();
+        const discQuestions = [
+            ["Soy muy decidido y orientado a resultados.", "Me gusta inspirar y motivar a otros.", "Prefiero trabajar en equipo y colaborar.", "Soy muy analítico y detallista."],
+            ["Tomo decisiones rápidas bajo presión.", "Me apasiona generar nuevas ideas.", "Me gusta mantener la armonía en el grupo.", "Sigo procedimientos establecidos cuidadosamente."],
+            ["Me gusta liderar proyectos con autoridad.", "Disfruto socializar y construir relaciones.", "Valoro la estabilidad y la consistencia.", "Me aseguro de que todo esté bien documentado."],
+            ["Asumo riesgos para lograr objetivos.", "Me entusiasmo compartiendo mi visión.", "Prefiero un ambiente de trabajo predecible.", "Analizo datos antes de tomar decisiones."],
+            ["Me enfoco en resultados más que en procesos.", "Influyo en otros con mi entusiasmo.", "Soy paciente en situaciones difíciles.", "Me aseguro de cumplir con las normas."],
+            ["Tomo la iniciativa en situaciones inciertas.", "Me gusta persuadir a otros con ideas.", "Apoyo a mis compañeros de manera constante.", "Me concentro en la precisión de mi trabajo."],
+            ["Busco soluciones rápidas y efectivas.", "Disfruto ser el centro de atención.", "Me gusta trabajar en un equipo unido.", "Prefiero seguir métodos probados."],
+            ["Me enfrento a desafíos con confianza.", "Motivo a otros con mi optimismo.", "Valoro la cooperación sobre la competencia.", "Me aseguro de evitar errores en mi trabajo."],
+            ["Persigo metas con determinación.", "Soy expresivo y comunicativo.", "Prefiero un ritmo de trabajo constante.", "Me enfoco en los detalles técnicos."],
+            ["Me gusta tomar el control en proyectos.", "Disfruto inspirando a mi equipo.", "Me siento cómodo en roles de apoyo.", "Valoro la exactitud en mis tareas."],
+            ["Asumo la responsabilidad de los resultados.", "Me gusta generar entusiasmo en otros.", "Prefiero evitar conflictos en el trabajo.", "Me aseguro de seguir las reglas al pie de la letra."],
+            ["Tomo decisiones basadas en objetivos claros.", "Me gusta influir en las opiniones de otros.", "Valoro la armonía en el entorno laboral.", "Me concentro en la calidad del trabajo."],
+            ["Me motiva alcanzar metas ambiciosas.", "Disfruto de un entorno social dinámico.", "Me gusta contribuir al éxito del equipo.", "Prefiero planificar cuidadosamente mis tareas."],
+            ["Me enfrento a retos con decisión.", "Me gusta motivar a otros con ideas nuevas.", "Soy confiable en mis responsabilidades.", "Me aseguro de que todo esté bien organizado."],
+            ["Persigo resultados con enfoque directo.", "Disfruto compartir mi entusiasmo.", "Me gusta trabajar en un ambiente estable.", "Me concentro en cumplir con estándares."],
+            ["Tomo el liderazgo en situaciones críticas.", "Me gusta influir positivamente en otros.", "Valoro la consistencia en mi trabajo.", "Me aseguro de que todo sea preciso."],
+            ["Me enfoco en resolver problemas rápido.", "Disfruto promover ideas innovadoras.", "Prefiero un entorno laboral predecible.", "Me concentro en la exactitud de los datos."],
+            ["Asumo riesgos calculados para avanzar.", "Me gusta inspirar con mi energía.", "Soy paciente y apoyo al equipo.", "Me aseguro de seguir procedimientos claros."],
+            ["Me gusta dirigir con autoridad.", "Disfruto de un entorno social activo.", "Valoro la estabilidad en el trabajo.", "Me concentro en evitar errores."],
+            ["Tomo decisiones con confianza.", "Me gusta motivar con mi entusiasmo.", "Prefiero un rol de apoyo en el equipo.", "Me aseguro de que todo esté bien estructurado."],
+            ["Me enfoco en lograr resultados rápidos.", "Disfruto influir con mi comunicación.", "Valoro la cooperación en el equipo.", "Me concentro en la precisión técnica."],
+            ["Persigo objetivos con determinación.", "Me gusta generar ideas inspiradoras.", "Soy confiable y constante en mi trabajo.", "Me aseguro de cumplir con las expectativas."],
+            ["Tomo el control en situaciones ambiguas.", "Disfruto motivar a otros con mi visión.", "Prefiero un entorno laboral estructurado.", "Me concentro en los detalles del proceso."],
+            ["Me enfrento a desafíos con resolución.", "Me gusta influir con mi carisma.", "Valoro la estabilidad y el trabajo en equipo.", "Me aseguro de que todo sea exacto."]
+        ];
+        let responses = {};
+        let completedBlocks = 0;
+        function initializeQuestions() {
+            const container = document.getElementById('questionsContainer');
 
-            // Inicializar puntuaciones para los perfiles
-            let interno = { D: 0, I: 0, S: 0, C: 0 };
-            let externo = { D: 0, I: 0, S: 0, C: 0 };
-            let resumen = { D: 0, I: 0, S: 0, C: 0 };
+            discQuestions.forEach((block, blockIndex) => {
+                const blockDiv = document.createElement('div');
+                blockDiv.className = 'question-block';
+                blockDiv.innerHTML = `
+                    <h3>Bloque ${blockIndex + 1} de ${discQuestions.length}</h3>
+                    <table class="question-table">
+                        <thead>
+                            <tr>
+                                <th>Declaración</th>
+                                <th>Más como yo</th>
+                                <th>Menos como yo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${block.map((statement, statementIndex) => `
+                                <tr>
+                                    <td>${statement}</td>
+                                    <td><input type="radio" name="most_${blockIndex}" value="${statementIndex}" onchange="validateBlock(${blockIndex})"></td>
+                                    <td><input type="radio" name="least_${blockIndex}" value="${statementIndex}" onchange="validateBlock(${blockIndex})"></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                container.appendChild(blockDiv);
+            });
+        }
+        function validateBlock(blockIndex) {
+            const mostSelected = document.querySelector(`input[name='most_${blockIndex}']:checked`);
+            const leastSelected = document.querySelector(`input[name='least_${blockIndex}']:checked`);
 
-            // Recolectar respuestas
-            for (let i = 1; i <= 24; i++) {
-                let mas = document.querySelector(`input[name="mas${i}"]:checked`).value;
-                let menos = document.querySelector(`input[name="menos${i}"]:checked`).value;
-
-                // Asignar puntajes: más peso en Interno para primeras 12 preguntas, Externo para últimas 12
-                if (i <= 12) {
-                    interno[mas] += 1.5;
-                    interno[menos] -= 1.5;
-                    externo[mas] += 0.5;
-                    externo[menos] -= 0.5;
-                } else {
-                    interno[mas] += 0.5;
-                    interno[menos] -= 0.5;
-                    externo[mas] += 1.5;
-                    externo[menos] -= 1.5;
+            if (mostSelected && leastSelected) {
+                if (mostSelected.value === leastSelected.value) {
+                    alert('No puede seleccionar la misma declaración para ambas columnas.');
+                    leastSelected.checked = false;
+                    return;
                 }
+
+                responses[blockIndex] = {
+                    most: parseInt(mostSelected.value),
+                    least: parseInt(leastSelected.value)
+                };
+            } else if (responses[blockIndex]) {
+                delete responses[blockIndex];
             }
 
-            // Calcular Resumen (promedio de Interno y Externo)
-            for (let factor in interno) {
-                resumen[factor] = (interno[factor] + externo[factor]) / 2;
-            }
+            updateProgress();
+        }
+        function updateProgress() {
+            completedBlocks = Object.keys(responses).length;
+            const progress = (completedBlocks / discQuestions.length) * 100;
 
-            // Normalizar puntuaciones a porcentajes (escala 0-100)
-            const puntuacionMax = 24 * 1.5;
-            const puntuacionMin = -24 * 1.5;
-            const rango = puntuacionMax - puntuacionMin;
-            let porcentajesInterno = {};
-            let porcentajesExterno = {};
-            let porcentajesResumen = {};
-            for (let factor in interno) {
-                porcentajesInterno[factor] = Math.round(((interno[factor] - puntuacionMin) / rango) * 100);
-                porcentajesExterno[factor] = Math.round(((externo[factor] - puntuacionMin) / rango) * 100);
-                porcentajesResumen[factor] = Math.round(((resumen[factor] - puntuacionMin) / rango) * 100);
-            }
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `${completedBlocks} de ${discQuestions.length} bloques completados`;
 
-            // Mostrar puntuaciones
-            document.getElementById('puntuaciones').innerText = 
-                `Perfil Interno:\nDominio (D): ${porcentajesInterno.D}%\nInfluencia (I): ${porcentajesInterno.I}%\nEstabilidad (S): ${porcentajesInterno.S}%\nCumplimiento (C): ${porcentajesInterno.C}%\n\n` +
-                `Perfil Externo:\nDominio (D): ${porcentajesExterno.D}%\nInfluencia (I): ${porcentajesExterno.I}%\nEstabilidad (S): ${porcentajesExterno.S}%\nCumplimiento (C): ${porcentajesExterno.C}%\n\n` +
-                `Perfil Resumen:\nDominio (D): ${porcentajesResumen.D}%\nInfluencia (I): ${porcentajesResumen.I}%\nEstabilidad (S): ${porcentajesResumen.S}%\nCumplimiento (C): ${porcentajesResumen.C}%`;
+            document.getElementById('generateReport').disabled = completedBlocks < discQuestions.length;
+        }
+        function calculateDISCScores() {
+            let internalScores = {D: 0, I: 0, S: 0, C: 0};
+            let externalScores = {D: 0, I: 0, S: 0, C: 0};
 
-            // Análisis completo
-            let analisisText = "Interpretación de tu Serie de Perfiles DISC:\n\n";
-            analisisText += "El DISC evalúa cuatro factores principales: Dominio (D), Influencia (I), Estabilidad (S) y Cumplimiento (C). Estos factores describen tu comportamiento natural y adaptado:\n";
-            analisisText += "- Dominio (D): Impulso, determinación y confianza. Indica independencia, ambición y competitividad.\n";
-            analisisText += "- Influencia (I): Sociabilidad y entusiasmo. Refleja extroversión y preferencia por evitar confrontaciones.\n";
-            analisisText += "- Estabilidad (S): Paciencia y consistencia. Sugiere fiabilidad y resistencia al cambio.\n";
-            analisisText += "- Cumplimiento (C): Precisión y estructura. Se asocia con análisis y organización.\n\n";
+            const factors = ['D', 'I', 'S', 'C'];
 
-            let maxInterno = Object.keys(porcentajesInterno).reduce((a, b) => porcentajesInterno[a] > porcentajesInterno[b] ? a : b);
-            let maxExterno = Object.keys(porcentajesExterno).reduce((a, b) => porcentajesExterno[a] > porcentajesExterno[b] ? a : b);
-            let maxResumen = Object.keys(porcentajesResumen).reduce((a, b) => porcentajesResumen[a] > porcentajesResumen[b] ? a : b);
+            Object.keys(responses).forEach(blockIndex => {
+                const response = responses[blockIndex];
+                const mostFactor = factors[response.most];
+                const leastFactor = factors[response.least];
 
-            analisisText += "Perfil Interno: Tu estilo natural (o bajo presión) es dominado por " + maxInterno + " (" + porcentajesInterno[maxInterno] + "%). ";
-            analisisText += maxInterno === 'D' ? "Eres decidido, orientado a resultados y competitivo." :
-                           maxInterno === 'I' ? "Eres entusiasta, sociable y expresivo." :
-                           maxInterno === 'S' ? "Eres paciente, confiable y estable." :
-                           "Eres analítico, detallista y organizado." + "\n";
-
-            analisisText += "Perfil Externo: Tu estilo adaptado (especialmente en el trabajo) está dominado por " + maxExterno + " (" + porcentajesExterno[maxExterno] + "%). ";
-            analisisText += maxExterno === 'D' ? "Te adaptas mostrando asertividad y liderazgo." :
-                           maxExterno === 'I' ? "Te adaptas con carisma y persuasión." :
-                           maxExterno === 'S' ? "Te adaptas con apoyo y estabilidad." :
-                           "Te adaptas con precisión y estructura." + "\n";
-
-            analisisText += "Perfil Resumen: Tu comportamiento general está dominado por " + maxResumen + " (" + porcentajesResumen[maxResumen] + "%), reflejando tu estilo típico.\n\n";
-
-            // Sub-características
-            let subCaracteristica = "";
-            if (maxInterno === 'D' && porcentajesInterno.D > porcentajesInterno.I + 10) subCaracteristica = "Eficiencia (D/I)";
-            else if (maxInterno === 'D' && porcentajesInterno.D > porcentajesInterno.S + 10) subCaracteristica = "Auto-motivación (D/S)";
-            else if (maxInterno === 'D' && porcentajesInterno.D > porcentajesInterno.C + 10) subCaracteristica = "Independencia (D/C)";
-            else if (maxInterno === 'I' && porcentajesInterno.I > porcentajesInterno.D + 10) subCaracteristica = "Amabilidad (I/D)";
-            else if (maxInterno === 'I' && porcentajesInterno.I > porcentajesInterno.S + 10) subCaracteristica = "Entusiasmo (I/S)";
-            else if (maxInterno === 'I' && porcentajesInterno.I > porcentajesInterno.C + 10) subCaracteristica = "Auto-Confianza (I/C)";
-            else if (maxInterno === 'S' && porcentajesInterno.S > porcentajesInterno.D + 10) subCaracteristica = "Paciencia (S/D)";
-            else if (maxInterno === 'S' && porcentajesInterno.S > porcentajesInterno.I + 10) subCaracteristica = "Consideración (S/I)";
-            else if (maxInterno === 'S' && porcentajesInterno.S > porcentajesInterno.C + 10) subCaracteristica = "Persistencia (S/C)";
-            else if (maxInterno === 'C' && porcentajesInterno.C > porcentajesInterno.D + 10) subCaracteristica = "Cooperación (C/D)";
-            else if (maxInterno === 'C' && porcentajesInterno.C > porcentajesInterno.I + 10) subCaracteristica = "Precisión (C/I)";
-            else if (maxInterno === 'C' && porcentajesInterno.C > porcentajesInterno.S + 10) subCaracteristica = "Sensibilidad (C/S)";
-            if (subCaracteristica) analisisText += "Sub-característica probable: " + subCaracteristica + ". ";
-
-            // Cambios entre perfiles
-            let cambioMax = Math.abs(porcentajesInterno[maxInterno] - porcentajesExterno[maxExterno]);
-            if (cambioMax > 25) {
-                analisisText += "Hay un cambio significativo (>25%) entre tu Perfil Interno y Externo, sugiriendo que te adaptas considerablemente a tu entorno, lo que puede generar estrés si se sostiene a largo plazo.\n";
-                if (porcentajesExterno.D > porcentajesInterno.D + 25) analisisText += "- Cambio ascendente en Dominio: Te presentas más asertivo de lo natural.\n";
-                if (porcentajesExterno.I > porcentajesInterno.I + 25) analisisText += "- Cambio ascendente en Influencia: Te adaptas con más sociabilidad.\n";
-                if (porcentajesExterno.S > porcentajesInterno.S + 25) analisisText += "- Cambio ascendente en Estabilidad: Buscas más estabilidad en tu rol.\n";
-                if (porcentajesExterno.C > porcentajesInterno.C + 25) analisisText += "- Cambio ascendente en Cumplimiento: Te enfocas más en precisión.\n";
-            } else {
-                analisisText += "Tu Perfil Interno y Externo son consistentes, indicando un estilo estable.\n";
-            }
-
-            // Perfiles comunes
-            let perfilComun = "";
-            if (porcentajesInterno.D > 70) perfilComun = "Alto Dominio (D/ISC) - Autócrata";
-            else if (porcentajesInterno.I > 70) perfilComun = "Alta Influencia (I/DSC) - Comunicador";
-            else if (porcentajesInterno.S > 70) perfilComun = "Alta Estabilidad (S/DIC) - Estable";
-            else if (porcentajesInterno.C > 70) perfilComun = "Alto Cumplimiento (C/DIS) - Diplomático";
-            else if (porcentajesInterno.D > 60 && porcentajesInterno.I > 60) perfilComun = "DI/SC - Proactivo, autoconfiado";
-            else if (porcentajesInterno.D > 60 && porcentajesInterno.S > 60) perfilComun = "DS/IC - Determinado, resiliente";
-            else if (porcentajesInterno.D > 60 && porcentajesInterno.C > 60) perfilComun = "DC/IS - Autosuficiente, objetivo";
-            else if (porcentajesInterno.I > 60 && porcentajesInterno.S > 60) perfilComun = "IS/DC - Simpático, solidario";
-            else if (porcentajesInterno.I > 60 && porcentajesInterno.C > 60) perfilComun = "IC/DS - Complaciente, diplomático";
-            else if (porcentajesInterno.S > 60 && porcentajesInterno.C > 60) perfilComun = "SC/DI - Analítico, paciente";
-            if (perfilComun) analisisText += "Perfil común: " + perfilComun + ".\n";
-
-            document.getElementById('analisis').innerText = analisisText;
-
-            // Mostrar sección de resultados
-            document.getElementById('resultado').style.display = 'block';
-
-            // Crear gráfico de radar
-            const ctx = document.getElementById('graficoDisc').getContext('2d');
-            new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['Dominio (D)', 'Influencia (I)', 'Estabilidad (S)', 'Cumplimiento (C)'],
-                    datasets: [
-                        {
-                            label: 'Perfil Interno',
-                            data: [porcentajesInterno.D, porcentajesInterno.I, porcentajesInterno.S, porcentajesInterno.C],
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 2
-                        },
-                        {
-                            label: 'Perfil Externo',
-                            data: [porcentajesExterno.D, porcentajesExterno.I, porcentajesExterno.S, porcentajesExterno.C],
-                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 2
-                        },
-                        {
-                            label: 'Perfil Resumen',
-                            data: [porcentajesResumen.D, porcentajesResumen.I, porcentajesResumen.S, porcentajesResumen.C],
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 2
-                        }
-                    ]
-                },
-                options: {
-                    scale: {
-                        ticks: {
-                            beginAtZero: true,
-                            max: 100,
-                            stepSize: 20
-                        }
-                    },
-                    elements: {
-                        line: {
-                            tension: 0
-                        }
-                    }
+                if (parseInt(blockIndex) < 12) {
+                    internalScores[mostFactor] += 1;
+                    internalScores[leastFactor] -= 1;
+                } else {
+                    externalScores[mostFactor] += 1;
+                    externalScores[leastFactor] -= 1;
                 }
             });
+
+            return {internal: internalScores, external: externalScores};
+        }
+        function normalizeScore(score) {
+            return Math.max(0, Math.min(100, ((score + 12) / 24) * 100));
+        }
+        function determineProfileType(scores) {
+            const factors = Object.keys(scores);
+            factors.sort((a, b) => scores[b] - scores[a]);
+
+            const primary = factors[0];
+            const secondary = factors[1];
+
+            if (scores[primary] - scores[secondary] > 15) {
+                return primary;
+            } else {
+                return `${primary}${secondary}`;
+            }
+        }
+        function getPersonalityTraits(profileType) {
+            const traits = {
+                'D': ['Decidido', 'Directo', 'Competitivo', 'Orientado a resultados', 'Independiente'],
+                'I': ['Entusiasta', 'Persuasivo', 'Sociable', 'Optimista', 'Comunicativo'],
+                'S': ['Estable', 'Paciente', 'Cooperativo', 'Leal', 'Sistemático'],
+                'C': ['Analítico', 'Preciso', 'Consciente', 'Sistemático', 'Prudente'],
+                'DS': ['Decidido', 'Sistemático', 'Directo', 'Estable', 'Competitivo'],
+                'DC': ['Decidido', 'Analítico', 'Orientado a resultados', 'Preciso', 'Independiente'],
+                'DI': ['Decidido', 'Entusiasta', 'Competitivo', 'Persuasivo', 'Directo'],
+                'IS': ['Entusiasta', 'Estable', 'Sociable', 'Paciente', 'Cooperativo'],
+                'IC': ['Entusiasta', 'Analítico', 'Persuasivo', 'Consciente', 'Comunicativo'],
+                'SC': ['Estable', 'Analítico', 'Paciente', 'Preciso', 'Sistemático'],
+                'CD': ['Analítico', 'Decidido', 'Preciso', 'Orientado a resultados', 'Sistemático'],
+                'CI': ['Analítico', 'Entusiasta', 'Preciso', 'Comunicativo', 'Consciente'],
+                'CS': ['Analítico', 'Estable', 'Preciso', 'Paciente', 'Sistemático'],
+                'SD': ['Estable', 'Decidido', 'Paciente', 'Directo', 'Cooperativo']
+            };
+
+            return traits[profileType] || traits['S'];
+        }
+        function generateReport() {
+            const candidateName = document.getElementById('candidateName').value || 'Candidato';
+            const analysisDate = document.getElementById('analysisDate').value;
+            const gender = document.getElementById('gender').value || 'No especificado';
+            const position = document.getElementById('position').value || '';
+
+            const scores = calculateDISCScores();
+            const internalNormalized = {
+                D: Math.round(normalizeScore(scores.internal.D)),
+                I: Math.round(normalizeScore(scores.internal.I)),
+                S: Math.round(normalizeScore(scores.internal.S)),
+                C: Math.round(normalizeScore(scores.internal.C))
+            };
+
+            const externalNormalized = {
+                D: Math.round(normalizeScore(scores.external.D)),
+                I: Math.round(normalizeScore(scores.external.I)),
+                S: Math.round(normalizeScore(scores.external.S)),
+                C: Math.round(normalizeScore(scores.external.C))
+            };
+
+            const summaryScores = {
+                D: Math.round((internalNormalized.D + externalNormalized.D) / 2),
+                I: Math.round((internalNormalized.I + externalNormalized.I) / 2),
+                S: Math.round((internalNormalized.S + externalNormalized.S) / 2),
+                C: Math.round((internalNormalized.C + externalNormalized.C) / 2)
+            };
+
+            const changePattern = {
+                D: externalNormalized.D - internalNormalized.D,
+                I: externalNormalized.I - internalNormalized.I,
+                S: externalNormalized.S - internalNormalized.S,
+                C: externalNormalized.C - internalNormalized.C
+            };
+
+            const internalProfile = determineProfileType(internalNormalized);
+            const externalProfile = determineProfileType(externalNormalized);
+            const summaryProfile = determineProfileType(summaryScores);
+
+            const personalityTraits = getPersonalityTraits(summaryProfile);
+
+            const reportHTML = `
+                <!-- Title Section -->
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Discus Clásico Perfil de Personalidad Informe</h1>
+                    <h2 class="text-2xl font-semibold text-gray-700 mt-2">${candidateName}</h2>
+                    <p class="text-gray-600">Fecha: ${new Date(analysisDate).toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                    <p class="text-gray-500 italic">Este informe está basado en el sistema DISC clásico.</p>
+                </div>
+                <!-- Candidate Details -->
+                <div class="section">
+                    <h2 class="section-title">Detalles del Candidato</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <p><strong>Nombre:</strong> ${candidateName}</p>
+                        <p><strong>Fecha de Análisis:</strong> ${new Date(analysisDate).toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                        <p><strong>Género:</strong> ${gender}</p>
+                        <p><strong>Posición:</strong> ${position || 'No especificado'}</p>
+                    </div>
+                    <h3 class="subsection-title mt-4">De un Vistazo</h3>
+                    <ul class="list-disc list-inside">
+                        ${personalityTraits.map(trait => `<li class="list-item">${trait}</li>`).join('')}
+                    </ul>
+                </div>
+                <!-- Introduction -->
+                <div class="section">
+                    <h2 class="section-title">Introducción</h2>
+                    <p>Este informe está diseñado para proporcionar una visión general completa de la personalidad y el comportamiento de ${candidateName} desde múltiples perspectivas. Utiliza contenido gráfico y textual para mostrar cómo es probable que ${candidateName.split(' ')[0]} reaccione en diferentes situaciones laborales. El informe incluye una serie de análisis gráficos, como la serie completa de perfiles DISC, un análisis detallado de los cuatro factores DISC, un análisis de la tarjeta de estilo, un resumen de rasgos y una mirada a la tensión del perfil actual.</p>
+                </div>
+                <!-- DISC Profile Series -->
+                <div class="section">
+                    <h2 class="section-title">Serie de Perfiles de DISC</h2>
+                    <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                        <p class="text-blue-900"><strong>¿Qué son los perfiles DISC?</strong></p>
+                        <p class="text-blue-800 text-sm mt-1">Imagina que tienes dos "versiones" de ti mismo: cómo eres naturalmente en casa con amigos (Perfil Interno) y cómo crees que debes actuar en el trabajo (Perfil Externo). El DISC analiza estas diferencias para ayudarte a entender tu comportamiento.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div class="bg-white border-2 border-green-200 rounded-lg p-4 hidden-section" id="internalProfileSection">
+                            <h3 class="subsection-title text-green-700">🏠 Perfil Interno - "Cómo soy realmente"</h3>
+                            <p class="text-green-600 text-sm mb-2"><strong>Tipo:</strong> ${internalProfile}</p>
+                            <div class="bg-green-50 p-4 rounded">
+                                <div class="grid grid-cols-4 gap-2 text-center text-sm">
+                                    <div><strong class="text-red-600">D</strong><br>${internalNormalized.D}%</div>
+                                    <div><strong class="text-yellow-600">I</strong><br>${internalNormalized.I}%</div>
+                                    <div><strong class="text-green-600">S</strong><br>${internalNormalized.S}%</div>
+                                    <div><strong class="text-blue-600">C</strong><br>${internalNormalized.C}%</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-sm">
+                                <p><strong>¿Qué significa?</strong> Es tu "yo auténtico" - cómo te comportas cuando estás relajado, con familia o amigos, sin presión externa.</p>
+                                <p class="mt-2"><strong>Ejemplo:</strong> ${internalProfile.includes('D') ? 'En casa, naturalmente tomas el control de las decisiones familiares y planificas las actividades.' : internalProfile.includes('I') ? 'Con tus amigos, eres quien organiza las reuniones y animas a todos con tu energía.' : internalProfile.includes('S') ? 'En tu círculo cercano, eres quien mantiene la paz y apoya a todos emocionalmente.' : 'Naturalmente organizas tu hogar con sistemas y te aseguras de que todo esté en orden.'}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border-2 border-blue-200 rounded-lg p-4 hidden-section" id="externalProfileSection">
+                            <h3 class="subsection-title text-blue-700">💼 Perfil Externo - "Cómo creo que debo ser en el trabajo"</h3>
+                            <p class="text-blue-600 text-sm mb-2"><strong>Tipo:</strong> ${externalProfile}</p>
+                            <div class="bg-blue-50 p-4 rounded">
+                                <div class="grid grid-cols-4 gap-2 text-center text-sm">
+                                    <div><strong class="text-red-600">D</strong><br>${externalNormalized.D}%</div>
+                                    <div><strong class="text-yellow-600">I</strong><br>${externalNormalized.I}%</div>
+                                    <div><strong class="text-green-600">S</strong><br>${externalNormalized.S}%</div>
+                                    <div><strong class="text-blue-600">C</strong><br>${externalNormalized.C}%</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-sm">
+                                <p><strong>¿Qué significa?</strong> Es la "máscara" que usas en el trabajo - cómo crees que debes comportarte para tener éxito en tu entorno laboral.</p>
+                                <p class="mt-2"><strong>Ejemplo:</strong> ${externalProfile.includes('D') ? 'En el trabajo, sientes que debes ser más directo y tomar decisiones rápidas, aunque naturalmente prefieras consenso.' : externalProfile.includes('I') ? 'En la oficina, crees que debes ser más sociable y persuasivo para influir en tu equipo.' : externalProfile.includes('S') ? 'En tu trabajo, piensas que debes ser más cooperativo y evitar conflictos para mantener el ambiente.' : 'En el entorno laboral, crees que debes ser más detallista y seguir procedimientos estrictos.'}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border-2 border-purple-200 rounded-lg p-4 hidden-section" id="summaryProfileSection">
+                            <h3 class="subsection-title text-purple-700">⚖️ Perfil Resumen - "Mi comportamiento típico"</h3>
+                            <p class="text-purple-600 text-sm mb-2"><strong>Tipo:</strong> ${summaryProfile}</p>
+                            <div class="bg-purple-50 p-4 rounded">
+                                <div class="grid grid-cols-4 gap-2 text-center text-sm">
+                                    <div><strong class="text-red-600">D</strong><br>${summaryScores.D}%</div>
+                                    <div><strong class="text-yellow-600">I</strong><br>${summaryScores.I}%</div>
+                                    <div><strong class="text-green-600">S</strong><br>${summaryScores.S}%</div>
+                                    <div><strong class="text-blue-600">C</strong><br>${summaryScores.C}%</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-sm">
+                                <p><strong>¿Qué significa?</strong> Es el promedio entre tu "yo auténtico" y tu "yo laboral" - tu comportamiento más común en la mayoría de situaciones.</p>
+                                <p class="mt-2"><strong>Ejemplo:</strong> ${summaryProfile.includes('D') ? 'Generalmente eres una persona decidida que toma iniciativa, tanto en lo personal como en lo profesional.' : summaryProfile.includes('I') ? 'Normalmente eres sociable y expresivo, disfrutando tanto las reuniones familiares como las de trabajo.' : summaryProfile.includes('S') ? 'Usualmente eres estable y cooperativo, buscando armonía en todos tus entornos.' : 'Típicamente eres organizado y detallista, aplicando la misma precisión en casa y en el trabajo.'}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border-2 border-orange-200 rounded-lg p-4 hidden-section" id="changePatternSection">
+                            <h3 class="subsection-title text-orange-700">🔄 Patrón de Cambio - "Qué tanto me adapto"</h3>
+                            <div class="bg-orange-50 p-4 rounded">
+                                <div class="grid grid-cols-4 gap-2 text-center text-sm">
+                                    <div><strong class="text-red-600">D</strong><br><span class="${changePattern.D > 0 ? 'text-green-600' : changePattern.D < 0 ? 'text-red-600' : 'text-gray-600'}">${changePattern.D > 0 ? '↑' : changePattern.D < 0 ? '↓' : '='} ${Math.abs(changePattern.D)}%</span></div>
+                                    <div><strong class="text-yellow-600">I</strong><br><span class="${changePattern.I > 0 ? 'text-green-600' : changePattern.I < 0 ? 'text-red-600' : 'text-gray-600'}">${changePattern.I > 0 ? '↑' : changePattern.I < 0 ? '↓' : '='} ${Math.abs(changePattern.I)}%</span></div>
+                                    <div><strong class="text-green-600">S</strong><br><span class="${changePattern.S > 0 ? 'text-green-600' : changePattern.S < 0 ? 'text-red-600' : 'text-gray-600'}">${changePattern.S > 0 ? '↑' : changePattern.S < 0 ? '↓' : '='} ${Math.abs(changePattern.S)}%</span></div>
+                                    <div><strong class="text-blue-600">C</strong><br><span class="${changePattern.C > 0 ? 'text-green-600' : changePattern.C < 0 ? 'text-red-600' : 'text-gray-600'}">${changePattern.C > 0 ? '↑' : changePattern.C < 0 ? '↓' : '='} ${Math.abs(changePattern.C)}%</span></div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-sm">
+                                <p><strong>¿Qué significa?</strong> Muestra qué tanto cambias tu comportamiento entre ser tú mismo y adaptarte al trabajo.</p>
+                                <p class="mt-2"><strong>Las flechas indican:</strong></p>
+                                <ul class="text-xs ml-4 mt-1">
+                                    <li><span class="text-green-600">↑</span> = En el trabajo actúas MÁS así que naturalmente</li>
+                                    <li><span class="text-red-600">↓</span> = En el trabajo actúas MENOS así que naturalmente</li>
+                                    <li><span class="text-gray-600">=</span> = Eres igual en ambos entornos (sin cambio)</li>
+                                </ul>
+                                <div class="mt-2 p-2 bg-orange-100 rounded text-xs">
+                                    <strong>Interpretación:</strong> ${Math.abs(changePattern.D) > 15 || Math.abs(changePattern.I) > 15 || Math.abs(changePattern.S) > 15 || Math.abs(changePattern.C) > 15 ? 'Te adaptas significativamente al trabajo. Esto puede generar algo de estrés si se mantiene por mucho tiempo.' : 'Mantienes bastante consistencia entre tu forma natural de ser y cómo actúas en el trabajo. Esto es saludable.'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Rest of your HTML code -->
+                <!-- Style Card -->
+                <div class="section">
+                    <h2 class="section-title">Tarjeta de Estilo</h2>
+                    <div class="bg-indigo-50 p-4 rounded-lg mb-4">
+                        <p class="text-indigo-900"><strong>¿Qué es la tarjeta de estilo?</strong></p>
+                        <p class="text-indigo-800 text-sm mt-1">Es como tu "manual de instrucciones" personal que explica cómo funciones mejor, qué te estresa, y cómo prefieres comunicarte. Imagínalo como las preferencias de tu personalidad.</p>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg mt-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Lo que evitas -->
+                            <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
+                                <h4 class="font-semibold text-red-700 mb-3 flex items-center">
+                                    <span class="mr-2">⚠️</span>Lo que te causa estrés:
+                                </h4>
+                                <p class="text-red-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Rutina y pérdida de control' : summaryProfile.includes('I') ? 'Aislamiento y detalles complejos' : summaryProfile.includes('S') ? 'Incertidumbre y cambios súbitos' : 'Críticas y decisiones precipitadas'}</p>
+                                <p class="text-red-700 text-sm">${summaryProfile.includes('D') ? 'Te frustras cuando tienes que seguir siempre las mismas rutinas o cuando otros toman decisiones que consideras tuyas.' : summaryProfile.includes('I') ? 'Te sientes incómodo trabajando solo por mucho tiempo o cuando tienes que analizar datos muy técnicos.' : summaryProfile.includes('S') ? 'Te genera ansiedad no saber qué esperar o cuando hay cambios constantes en los planes.' : 'Te pone nervioso recibir críticas directas o tener que decidir rápidamente sin analizar opciones.'}</p>
+                            </div>
+
+                            <!-- Cómo reaccionas bajo presión -->
+                            <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                                <h4 class="font-semibold text-yellow-700 mb-3 flex items-center">
+                                    <span class="mr-2">🔥</span>Cuando estás bajo presión:
+                                </h4>
+                                <p class="text-yellow-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Te vuelves más directo y exigente' : summaryProfile.includes('I') ? 'Puedes desorganizarte o hablar demasiado' : summaryProfile.includes('S') ? 'Te vuelves indeciso o rígido' : 'Tiendes a evitar o ser perfeccionista'}</p>
+                                <p class="text-yellow-700 text-sm">${summaryProfile.includes('D') ? 'Cuando hay mucha presión, puedes volvertepoco paciente con otros y tomar decisiones muy rápidas sin consultar.' : summaryProfile.includes('I') ? 'Bajo estrés, puedes dispersarte fácilmente o hablar mucho sin llegar al punto principal.' : summaryProfile.includes('S') ? 'Cuando hay presión, te cuesta tomar decisiones o te aferras mucho a lo conocido.' : 'Bajo estrés, puedes evitar tareas difíciles o volverte demasiado detallista y lento.'}</p>
+                            </div>
+
+                            <!-- En lo que te enfocas -->
+                            <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
+                                <h4 class="font-semibold text-green-700 mb-3 flex items-center">
+                                    <span class="mr-2">🎯</span>En lo que te enfocas:
+                                </h4>
+                                <p class="text-green-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Resultados y eficiencia' : summaryProfile.includes('I') ? 'Personas y entusiasmo' : summaryProfile.includes('S') ? 'Cooperación y estabilidad' : 'Exactitud y planificación'}</p>
+                                <p class="text-green-700 text-sm">${summaryProfile.includes('D') ? 'Tu atención se centra en lograr metas rápidamente y encontrar la forma más eficiente de hacer las cosas.' : summaryProfile.includes('I') ? 'Te importa más cómo se sienten las personas y mantener un ambiente positivo y motivador.' : summaryProfile.includes('S') ? 'Buscas que todos trabajen bien juntos y que haya un ambiente cómodo y predecible.' : 'Te concentras en que todo esté correcto, bien planificado y sin errores.'}</p>
+                            </div>
+                        </div>
+
+                        <!-- Estrategia preferida -->
+                        <div class="mt-6 bg-white p-4 rounded-lg border-2 border-indigo-200">
+                            <h4 class="font-semibold text-indigo-700 mb-3 flex items-center">
+                                <span class="mr-2">🎪</span>Tu estrategia natural para influir en otros:
+                            </h4>
+                            <div class="bg-indigo-50 p-4 rounded">
+                                <p class="text-indigo-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Autoridad y Control' : summaryProfile.includes('I') ? 'Inspiración y Persuasión' : summaryProfile.includes('S') ? 'Cooperación y Apoyo' : 'Datos y Planificación'}</p>
+                                <p class="text-indigo-700 text-sm">${summaryProfile.includes('D') ? 'Cuando quieres convencer a alguien, usas tu autoridad y presentas argumentos directos sobre por qué tu forma es la mejor.' : summaryProfile.includes('I') ? 'Para influir en otros, los inspiras con entusiasmo y los convences de que tu idea será emocionante y beneficiosa.' : summaryProfile.includes('S') ? 'Prefieres trabajar junto con otros, mostrando cómo tu propuesta ayuda a todos y mejora la cooperación.' : 'Cuando quieres convencer, presentas datos, análisis y planes detallados que demuestran que tu propuesta es la más segura.'}</p>
+                            </div>
+                        </div>
+
+                        <!-- Resumen de puntuaciones -->
+                        <div class="mt-6">
+                            <h4 class="font-semibold text-gray-700 mb-3">Tus puntuaciones DISC:</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="text-center">
+                                    <div class="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-2">
+                                        <span class="text-2xl font-bold text-red-600">${summaryScores.D}</span>
+                                    </div>
+                                    <p class="text-red-600 font-semibold">Dominancia</p>
+                                    <p class="text-xs text-red-500">Decisión y control</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-16 h-16 mx-auto bg-yellow-100 rounded-full flex items-center justify-center mb-2">
+                                        <span class="text-2xl font-bold text-yellow-600">${summaryScores.I}</span>
+                                    </div>
+                                    <p class="text-yellow-600 font-semibold">Influencia</p>
+                                    <p class="text-xs text-yellow-500">Sociabilidad y expresión</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
+                                        <span class="text-2xl font-bold text-green-600">${summaryScores.S}</span>
+                                    </div>
+                                    <p class="text-green-600 font-semibold">Estabilidad</p>
+                                    <p class="text-xs text-green-500">Paciencia y apoyo</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                                        <span class="text-2xl font-bold text-blue-600">${summaryScores.C}</span>
+                                    </div>
+                                    <p class="text-blue-600 font-semibold">Cumplimiento</p>
+                                    <p class="text-xs text-blue-500">Precisión y calidad</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- DISC Trait Analysis -->
+                <div class="section">
+                    <h2 class="section-title">Análisis de Rasgos de Personalidad</h2>
+                    <div class="bg-teal-50 p-4 rounded-lg mb-4">
+                        <p class="text-teal-900"><strong>¿Qué son los rasgos de personalidad?</strong></p>
+                        <p class="text-teal-800 text-sm mt-1">Son las características que te definen y que otros pueden observar en ti. Algunos rasgos siempre están presentes (Permanentes) y otros aparecen según la situación (Potenciales).</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div class="bg-gradient-to-br from-emerald-50 to-green-100 p-6 rounded-lg border-2 border-emerald-200">
+                            <h3 class="subsection-title text-emerald-800 flex items-center mb-4">
+                                <span class="mr-2">⭐</span>Características Permanentes
+                            </h3>
+                            <p class="text-emerald-700 text-sm mb-4"><strong>Estas son tus características "de siempre"</strong> - las que la gente siempre ve en ti, sin importar la situación.</p>
+
+                            <div class="space-y-3">
+                                ${personalityTraits.slice(0, 3).map(trait => `
+                                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-emerald-400">
+                                        <p class="font-medium text-emerald-900">${trait}</p>
+                                        <p class="text-xs text-emerald-700 mt-1">${getTraitDescription(trait, true)}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <div class="mt-4 p-3 bg-emerald-100 rounded-lg">
+                                <p class="text-emerald-800 text-sm"><strong>💡 En tu vida diaria:</strong> Estas características aparecen automáticamente en tu comportamiento, tanto en casa como en el trabajo. Es tu "esencia" que otros reconocen fácilmente.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-sky-50 to-blue-100 p-6 rounded-lg border-2 border-sky-200">
+                            <h3 class="subsection-title text-sky-800 flex items-center mb-4">
+                                <span class="mr-2">🔄</span>Características Potenciales
+                            </h3>
+                            <p class="text-sky-700 text-sm mb-4"><strong>Estas aparecen en ciertas situaciones</strong> - son parte de ti, pero las muestras más cuando el contexto lo requiere.</p>
+
+                            <div class="space-y-3">
+                                ${personalityTraits.slice(3, 5).map(trait => `
+                                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-sky-400">
+                                        <p class="font-medium text-sky-900">${trait}</p>
+                                        <p class="text-xs text-sky-700 mt-1">${getTraitDescription(trait, false)}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <div class="mt-4 p-3 bg-sky-100 rounded-lg">
+                                <p class="text-sky-800 text-sm"><strong>💡 Cuándo aparecen:</strong> Estas características surgen más cuando estás en tu zona de comfort o cuando la situación específicamente las requiere. Pueden ser menos visibles bajo estrés.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ejemplos prácticos -->
+                    <div class="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg">
+                        <h4 class="font-semibold text-purple-800 mb-3 flex items-center">
+                            <span class="mr-2">📝</span>Ejemplos de cómo se ven estos rasgos en la práctica:
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-4 rounded-lg">
+                                <h5 class="font-medium text-purple-700 mb-2">En reuniones de trabajo:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Tomas la iniciativa, propones soluciones directas y buscas llegar rápido a decisiones.' : summaryProfile.includes('I') ? 'Compartes ideas con entusiasmo, motivas al equipo y mantienes un ambiente positivo.' : summaryProfile.includes('S') ? 'Escuchas a todos, buscas consenso y te aseguras de que nadie se sienta excluido.' : 'Haces preguntas detalladas, analizas pros y contras antes de opinar.'}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg">
+                                <h5 class="font-medium text-purple-700 mb-2">Cuando hay problemas:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Buscas soluciones rápidas, tomas el control de la situación y diriges a otros hacia la solución.' : summaryProfile.includes('I') ? 'Mantienes el optimismo del equipo, buscas apoyo en otros y enfocas en lo positivo.' : summaryProfile.includes('S') ? 'Ofreces apoyo emocional, buscas mantener la calma y ayudas a que todos cooperen.' : 'Analizas las causas, investigas opciones y propones planes detallados para evitar que se repita.'}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg">
+                                <h5 class="font-medium text-purple-700 mb-2">En proyectos nuevos:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Te emocionas con los desafíos, quieres liderar el proyecto y establecer metas ambiciosas.' : summaryProfile.includes('I') ? 'Generas entusiasmo en el equipo, propones ideas creativas y motivas a todos a participar.' : summaryProfile.includes('S') ? 'Te aseguras de entender bien las expectativas, planificas paso a paso y coordinas con el equipo.' : 'Investigas a fondo el proyecto, haces planes detallados y te aseguras de tener todos los recursos necesarios.'}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg">
+                                <h5 class="font-medium text-purple-700 mb-2">Con compañeros difíciles:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Confrontas directamente los problemas, estableces límites claros y buscas resoluciones rápidas.' : summaryProfile.includes('I') ? 'Intentas ganar su confianza con carisma, buscas puntos en común y mantienes la comunicación abierta.' : summaryProfile.includes('S') ? 'Eres paciente, intentas entender su perspectiva y buscas formas de trabajar en armonía.' : 'Documentas las situaciones, sigues los procedimientos apropiados y buscas soluciones sistemáticas.'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Profile Tension -->
+                <div class="section">
+                    <h2 class="section-title">Nivel de Adaptación y Estrés</h2>
+                    <div class="bg-amber-50 p-4 rounded-lg mb-4">
+                        <p class="text-amber-900"><strong>¿Qué es la tensión de perfil?</strong></p>
+                        <p class="text-amber-800 text-sm mt-1">Es como medir qué tanto "esfuerzo extra" haces para adaptarte al trabajo. Imagina que tu personalidad natural es como tu ropa cómoda de casa, y en el trabajo tienes que usar un traje - la tensión mide qué tan incómodo te sientes con ese "traje laboral".</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Medidor visual de tensión -->
+                        <div class="bg-white p-6 rounded-lg border-2 border-gray-200">
+                            <h4 class="font-semibold text-gray-700 mb-4 flex items-center">
+                                <span class="mr-2">📊</span>Tu nivel de adaptación actual:
+                            </h4>
+
+                            ${(() => {
+                                const maxChange = Math.max(Math.abs(changePattern.D), Math.abs(changePattern.I), Math.abs(changePattern.S), Math.abs(changePattern.C));
+                                const tensionLevel = maxChange < 10 ? 'low' : maxChange < 20 ? 'medium' : 'high';
+                                const tensionColor = tensionLevel === 'low' ? 'green' : tensionLevel === 'medium' ? 'yellow' : 'red';
+                                const tensionText = tensionLevel === 'low' ? 'Bajo' : tensionLevel === 'medium' ? 'Moderado' : 'Alto';
+
+                                return `
+                                <div class="relative">
+                                    <!-- Medidor visual -->
+                                    <div class="w-full bg-gray-200 rounded-full h-6 mb-4">
+                                        <div class="bg-${tensionColor}-500 h-6 rounded-full transition-all duration-500" style="width: ${Math.min(maxChange * 2, 100)}%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-600 mb-4">
+                                        <span>Sin estrés</span>
+                                        <span>Estrés moderado</span>
+                                        <span>Mucho estrés</span>
+                                    </div>
+
+                                    <div class="text-center p-4 bg-${tensionColor}-50 rounded-lg border-2 border-${tensionColor}-200">
+                                        <p class="text-${tensionColor}-800 font-bold text-lg">Nivel: ${tensionText}</p>
+                                        <p class="text-${tensionColor}-700 text-sm mt-1">(${maxChange}% de adaptación máxima)</p>
+                                    </div>
+                                </div>
+                                `;
+                            })()}
+                        </div>
+
+                        <!-- Explicación del nivel -->
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded-lg border-l-4 ${(() => {
+                                const maxChange = Math.max(Math.abs(changePattern.D), Math.abs(changePattern.I), Math.abs(changePattern.S), Math.abs(changePattern.C));
+                                return maxChange < 10 ? 'border-green-500 bg-green-50' : maxChange < 20 ? 'border-yellow-500 bg-yellow-50' : 'border-red-500 bg-red-50';
+                            })()}">
+                                <h5 class="font-medium ${(() => {
+                                    const maxChange = Math.max(Math.abs(changePattern.D), Math.abs(changePattern.I), Math.abs(changePattern.S), Math.abs(changePattern.C));
+                                    return maxChange < 10 ? 'text-green-700' : maxChange < 20 ? 'text-yellow-700' : 'text-red-700';
+                                })()}">¿Qué significa esto para ti?</h5>
+                                <p class="text-sm mt-2 ${(() => {
+                                    const maxChange = Math.max(Math.abs(changePattern.D), Math.abs(changePattern.I), Math.abs(changePattern.S), Math.abs(changePattern.C));
+                                    return maxChange < 10 ? 'text-green-600' : maxChange < 20 ? 'text-yellow-600' : 'text-red-600';
+                                })()}">
+                                    ${(() => {
+                                        const maxChange = Math.max(Math.abs(changePattern.D), Math.abs(changePattern.I), Math.abs(changePattern.S), Math.abs(changePattern.C));
+                                        if (maxChange < 10) {
+                                            return '¡Excelente! Puedes ser tú mismo en el trabajo sin sentir mucha presión. Tu personalidad natural encaja bien con lo que tu trabajo requiere.';
+                                        } else if (maxChange < 20) {
+                                            return 'Haces algunos ajustes para adaptarte al trabajo, lo cual es normal. Ocasionalmente puedes sentir un poco de estrés, pero generalmente lo manejas bien.';
+                                        } else {
+                                            return 'Estás haciendo cambios significativos para adaptarte al trabajo. Esto puede generar estrés si se mantiene por mucho tiempo. Considera buscar formas de ser más auténtico.';
+                                        }
+                                    })()}
+                                </p>
+                            </div>
+
+                            <!-- Factor principal de tensión -->
+                            <div class="bg-white p-4 rounded-lg border-2 border-orange-200">
+                                <h5 class="font-medium text-orange-700 mb-2">🎯 Tu principal área de adaptación:</h5>
+                                <p class="font-semibold text-orange-800">
+                                    ${Math.abs(changePattern.D) >= Math.abs(changePattern.I) && Math.abs(changePattern.D) >= Math.abs(changePattern.S) && Math.abs(changePattern.D) >= Math.abs(changePattern.C) ?
+                                        `Dominancia (${Math.abs(changePattern.D)}% de cambio)` :
+                                        Math.abs(changePattern.I) >= Math.abs(changePattern.S) && Math.abs(changePattern.I) >= Math.abs(changePattern.C) ?
+                                        `Influencia (${Math.abs(changePattern.I)}% de cambio)` :
+                                        Math.abs(changePattern.S) >= Math.abs(changePattern.C) ?
+                                        `Estabilidad (${Math.abs(changePattern.S)}% de cambio)` :
+                                        `Cumplimiento (${Math.abs(changePattern.C)}% de cambio)`}
+                                </p>
+                                <p class="text-orange-600 text-sm mt-2">
+                                    ${(() => {
+                                        const maxFactor = Math.abs(changePattern.D) >= Math.abs(changePattern.I) && Math.abs(changePattern.D) >= Math.abs(changePattern.S) && Math.abs(changePattern.D) >= Math.abs(changePattern.C) ? 'D' :
+                                                         Math.abs(changePattern.I) >= Math.abs(changePattern.S) && Math.abs(changePattern.I) >= Math.abs(changePattern.C) ? 'I' :
+                                                         Math.abs(changePattern.S) >= Math.abs(changePattern.C) ? 'S' : 'C';
+                                        const isIncreasing = changePattern[maxFactor] > 0;
+
+                                        if (maxFactor === 'D') {
+                                            return isIncreasing ?
+                                                'En el trabajo intentas ser más directo y decisivo de lo que eres naturalmente. Esto puede agotarte si lo mantienes todo el tiempo.' :
+                                                'En el trabajo reprimes tu tendencia natural a tomar control y ser directo. Esto puede frustrarte a largo plazo.';
+                                        } else if (maxFactor === 'I') {
+                                            return isIncreasing ?
+                                                'En el trabajo te esfuerzas por ser más sociable y expresivo de lo que eres naturalmente. Esto puede ser agotador en roles muy sociales.' :
+                                                'En el trabajo limitas tu expresividad y sociabilidad natural. Esto puede hacerte sentir menos auténtico.';
+                                        } else if (maxFactor === 'S') {
+                                            return isIncreasing ?
+                                                'En el trabajo intentas ser más paciente y cooperativo de lo que eres naturalmente. Esto puede generar frustración interna.' :
+                                                'En el trabajo sientes presión para ser menos estable y más ágil de lo que prefieres naturalmente.';
+                                        } else {
+                                            return isIncreasing ?
+                                                'En el trabajo te sientes presionado a ser más detallista y cuidadoso de lo que eres naturalmente. Esto puede ralentizarte.' :
+                                                'En el trabajo sientes que debes ser menos perfeccionista y más rápido de lo que prefieres naturalmente.';
+                                        }
+                                    })()}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recomendaciones -->
+                    <div class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
+                        <h4 class="font-semibold text-indigo-800 mb-4 flex items-center">
+                            <span class="mr-2">💡</span>Recomendaciones para reducir el estrés:
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${(() => {
+                                const maxChange = Math.max(Math.abs(changePattern.D), Math.abs(changePattern.I), Math.abs(changePattern.S), Math.abs(changePattern.C));
+                                if (maxChange < 10) {
+                                    return `
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">✅ <strong>Mantén el equilibrio:</strong> Tienes una buena alineación entre tu personalidad y tu trabajo.</p>
+                                        </div>
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">✅ <strong>Sigue así:</strong> Puedes seguir siendo auténtico en tu entorno laboral.</p>
+                                        </div>
+                                    `;
+                                } else if (maxChange < 20) {
+                                    return `
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">⚖️ <strong>Equilibra tu energía:</strong> Tómate descansos para "recargarte" siendo tú mismo.</p>
+                                        </div>
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">🗣️ <strong>Comunica tus preferencias:</strong> Habla con tu jefe sobre tu estilo natural de trabajo.</p>
+                                        </div>
+                                    `;
+                                } else {
+                                    return `
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">🔄 <strong>Busca más autenticidad:</strong> Encuentra maneras de usar más tu estilo natural en el trabajo.</p>
+                                        </div>
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">💬 <strong>Habla con tu supervisor:</strong> Discute cómo puedes aportar más usando tus fortalezas naturales.</p>
+                                        </div>
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">🏠 <strong>Compensa fuera del trabajo:</strong> Dedica tiempo a actividades que te permitan ser completamente tú mismo.</p>
+                                        </div>
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-indigo-700 text-sm">🎯 <strong>Considera un cambio:</strong> Si es posible, busca roles que se alineen mejor con tu estilo natural.</p>
+                                        </div>
+                                    `;
+                                }
+                            })()}
+                        </div>
+                    </div>
+                </div>
+                <!-- Textual Report -->
+                <div class="section">
+                    <h2 class="section-title">Informe Textual</h2>
+                    <p>El informe textual contiene secciones detalladas en lenguaje natural que discuten el comportamiento de ${candidateName.split(' ')[0]}.</p>
+                    <div class="space-y-4 mt-4">
+                        <div class="border-l-4 border-blue-500 pl-4">
+                            <h4 class="font-semibold">1. Generalidades:</h4>
+                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} es decidido, orientado a resultados y prefiere tomar el control de las situaciones. Es competitivo y busca desafíos que le permitan demostrar su liderazgo.` : summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} es entusiasta, comunicativo y disfruta interactuando con otros. Le gusta inspirar y motivar a su equipo con su energía positiva.` : summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} es estable, cooperativo y trabaja a un ritmo constante para producir trabajo de calidad. Prefiere entornos con apoyo y valora la armonía del equipo.` : `${candidateName.split(' ')[0]} es analítico, preciso y se enfoca en los detalles. Prefiere seguir procedimientos establecidos y asegurarse de que todo esté bien documentado.`}</p>
+                        </div>
+
+                        <div class="border-l-4 border-green-500 pl-4">
+                            <h4 class="font-semibold">2. Adaptación de Comportamiento:</h4>
+                            <p class="text-sm">${Math.abs(changePattern.D) > 10 || Math.abs(changePattern.I) > 10 || Math.abs(changePattern.S) > 10 || Math.abs(changePattern.C) > 10 ? `${candidateName.split(' ')[0]} adapta significativamente su comportamiento para cumplir con las condiciones laborales percibidas, mostrando flexibilidad pero posible tensión.` : `${candidateName.split(' ')[0]} mantiene una consistencia entre su estilo natural y las demandas del trabajo, sugiriendo una buena alineación con su rol actual.`}</p>
+                        </div>
+
+                        <div class="border-l-4 border-yellow-500 pl-4">
+                            <h4 class="font-semibold">3. Ventajas y Desventajas:</h4>
+                            <p class="text-sm"><strong>Ventajas:</strong> ${summaryProfile.includes('D') ? 'Toma decisiones rápidas, orientado a resultados, liderazgo natural.' : summaryProfile.includes('I') ? 'Comunicación efectiva, motivación de equipos, adaptabilidad social.' : summaryProfile.includes('S') ? 'Trabajo en equipo, estabilidad, lealtad y paciencia.' : 'Precisión, análisis detallado, seguimiento de procedimientos.'}</p>
+                            <p class="text-sm"><strong>Áreas de mejora:</strong> ${summaryProfile.includes('D') ? 'Puede ser impaciente, necesita trabajar en la escucha activa.' : summaryProfile.includes('I') ? 'Necesita enfocarse más en detalles y seguimiento.' : summaryProfile.includes('S') ? 'Puede resistirse al cambio, necesita desarrollar más asertividad.' : 'Puede ser perfeccionista, necesita ser más decisivo.'}</p>
+                        </div>
+
+                        <div class="border-l-4 border-red-500 pl-4">
+                            <h4 class="font-semibold">4. Estilo de Comunicación:</h4>
+                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} prefiere comunicación directa y eficiente, enfocándose en resultados y decisiones rápidas.` : summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} es expresivo y persuasivo, prefiere la comunicación cara a cara y disfruta las interacciones sociales.` : summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} es diplomático y cooperativo, prefiere evitar conflictos y mantener relaciones armoniosas.` : `${candidateName.split(' ')[0]} es preciso y formal, prefiere comunicarse por escrito y con información detallada.`}</p>
+                        </div>
+
+                        <div class="border-l-4 border-purple-500 pl-4">
+                            <h4 class="font-semibold">5. Toma de Decisiones:</h4>
+                            <p class="text-sm">${summaryProfile.includes('D') ? 'Toma decisiones rápidas basándose en objetivos claros y resultados esperados.' : summaryProfile.includes('I') ? 'Considera el impacto en las personas y busca el consenso del grupo antes de decidir.' : summaryProfile.includes('S') ? 'Prefiere discutir con compañeros y buscar estabilidad antes de tomar decisiones importantes.' : 'Analiza cuidadosamente todos los datos y considera múltiples opciones antes de decidir.'}</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Relationship Keynotes -->
+                <div class="section">
+                    <h2 class="section-title">Keynotes de Relación</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-red-50 p-4 rounded-lg">
+                            <h3 class="subsection-title text-red-700">Con Personas de Alto Dominio</h3>
+                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} puede competir por el liderazgo. Es importante establecer roles claros y enfoques colaborativos.` : `${candidateName.split(' ')[0]} puede sentirse presionado por individuos muy directos. Necesita tiempo para procesar las demandas.`}</p>
+                        </div>
+
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h3 class="subsection-title text-yellow-700">Con Personas de Alta Influencia</h3>
+                            <p class="text-sm">${summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} disfruta las interacciones sociales pero puede distraerse de las tareas importantes.` : `${candidateName.split(' ')[0]} puede encontrar desafiante el estilo expresivo, prefiriendo comunicación más estructurada.`}</p>
+                        </div>
+
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h3 class="subsection-title text-green-700">Con Personas de Alta Estabilidad</h3>
+                            <p class="text-sm">${summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} comparte valores de cooperación y trabajo en equipo, creando relaciones armoniosas.` : `${candidateName.split(' ')[0]} puede necesitar ajustar su ritmo para trabajar efectivamente con personas más pausadas.`}</p>
+                        </div>
+
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h3 class="subsection-title text-blue-700">Con Personas de Alto Cumplimiento</h3>
+                            <p class="text-sm">${summaryProfile.includes('C') ? `${candidateName.split(' ')[0]} comparte un enfoque analítico y detallado, funcionando bien en entornos estructurados.` : `${candidateName.split(' ')[0]} puede necesitar más paciencia con los procesos detallados que requieren estas personas.`}</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Glossary of Terms -->
+                <div class="section">
+                    <h2 class="section-title">Glosario de Términos</h2>
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <dl class="space-y-4">
+                            <div>
+                                <dt class="font-bold text-red-600">Dominancia (D):</dt>
+                                <dd class="text-sm">Factor DISC asociado con el control, la asertividad y la orientación a resultados. Las personas con alta dominancia son directas y competitivas.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-bold text-yellow-600">Influencia (I):</dt>
+                                <dd class="text-sm">Factor DISC asociado con la sociabilidad y la expresividad. Las personas influyentes son comunicativas y persuasivas.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-bold text-green-600">Estabilidad (S):</dt>
+                                <dd class="text-sm">Factor DISC relacionado con la paciencia y la empatía. Las personas estables son cooperativas y comprensivas.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-bold text-blue-600">Cumplimiento (C):</dt>
+                                <dd class="text-sm">Factor DISC asociado con la precisión, detalle y estructura. Las personas con alto cumplimiento prefieren reglas y procedimientos.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-bold">Perfil Interno:</dt>
+                                <dd class="text-sm">Representa el estilo natural y las motivaciones internas de la persona, cómo se comporta cuando no hay presiones externas.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-bold">Perfil Externo:</dt>
+                                <dd class="text-sm">Refleja cómo la persona cree que debe comportarse en su entorno laboral actual, las adaptaciones que hace.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-bold">Patrón de Cambio:</dt>
+                                <dd class="text-sm">Gráfico que muestra las diferencias entre los Perfiles Interno y Externo, indicando áreas de adaptación o tensión.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-bold">Tensión de Perfil:</dt>
+                                <dd class="text-sm">Medida del estrés o presión que experimenta una persona al adaptar su estilo natural a las demandas percibidas del entorno.</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+                <!-- Notes -->
+                <div class="section">
+                    <h2 class="section-title">Notas Importantes</h2>
+                    <div class="bg-blue-50 p-6 rounded-lg">
+                        <ul class="list-disc list-inside space-y-2 text-sm">
+                            <li>Este informe se basa en las respuestas de ${candidateName.split(' ')[0]} al cuestionario DISC, proporcionando una visión detallada de su personalidad y comportamiento en contextos laborales.</li>
+                            <li>Los resultados deben utilizarse como una guía para el desarrollo personal y profesional, no como una limitación de las capacidades individuales.</li>
+                            <li>El comportamiento puede variar según el contexto, la experiencia y el desarrollo personal continuo.</li>
+                            <li>Se recomienda utilizar estos resultados junto con otras evaluaciones y observaciones para obtener una visión completa del individuo.</li>
+                            <li>Este informe es válido en el momento de la evaluación y puede cambiar con el tiempo y las circunstancias.</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Action Buttons -->
+                <div class="text-center mt-8 space-x-4">
+                    <button onclick="showEvaluation()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded">Realizar Nueva Evaluación</button>
+                </div>
+            `;
+
+            document.getElementById('reportContent').innerHTML = reportHTML;
+            document.getElementById('evaluation-section').classList.remove('active');
+            document.getElementById('report-section').classList.add('active');
+
+            // Show the hidden sections
+            document.getElementById('internalProfileSection').classList.remove('hidden-section');
+            document.getElementById('externalProfileSection').classList.remove('hidden-section');
+            document.getElementById('summaryProfileSection').classList.remove('hidden-section');
+            document.getElementById('changePatternSection').classList.remove('hidden-section');
+        }
+
+        function getTraitDescription(trait, isPermanent) {
+            const descriptions = {
+                'Decidido': isPermanent ? 'Siempre sabes lo que quieres y vas por ello sin dudar.' : 'Cuando la situación lo requiere, puedes tomar decisiones firmes.',
+                'Directo': isPermanent ? 'Dices las cosas como son, sin rodeos ni diplomacia excesiva.' : 'Puedes ser directo cuando es necesario, aunque prefieres ser más diplomático.',
+                'Competitivo': isPermanent ? 'Te gusta ganar y ser el mejor en lo que haces.' : 'Cuando hay competencia, sacas tu lado más competitivo.',
+                'Orientado a resultados': isPermanent ? 'Todo lo que haces debe tener un propósito y resultado claro.' : 'Te enfocas en resultados cuando el proyecto lo demanda.',
+                'Independiente': isPermanent ? 'Prefieres trabajar solo y tomar tus propias decisiones.' : 'Puedes trabajar independientemente cuando es necesario.',
+                'Entusiasta': isPermanent ? 'Siempre mantienes energía positiva y contagias alegría.' : 'Cuando el ambiente lo permite, muestras tu lado más entusiasta.',
+                'Persuasivo': isPermanent ? 'Naturalmente convences a otros con tu carisma y comunicación.' : 'Puedes ser persuasivo cuando necesitas influir en alguien.',
+                'Sociable': isPermanent ? 'Disfrutas estar con gente y haces amigos fácilmente.' : 'Te abres socialmente cuando el contexto es apropiado.',
+                'Optimista': isPermanent ? 'Siempre ves el lado positivo de las situaciones.' : 'Mantienes optimismo cuando otros lo necesitan.',
+                'Comunicativo': isPermanent ? 'Te expresas claramente y disfrutas las conversaciones.' : 'Comunicas efectivamente cuando la situación lo requiere.',
+                'Estable': isPermanent ? 'Eres consistente y confiable en todas las situaciones.' : 'Proporcionas estabilidad cuando hay mucha incertidumbre.',
+                'Paciente': isPermanent ? 'Naturalmente esperas y no te desesperas fácilmente.' : 'Puedes ser paciente cuando la situación lo demanda.',
+                'Cooperativo': isPermanent ? 'Siempre buscas trabajar en equipo y ayudar a otros.' : 'Colaboras más cuando el proyecto requiere trabajo en equipo.',
+                'Leal': isPermanent ? 'Eres fiel a tus compromisos, personas y organizaciones.' : 'Muestras lealtad especialmente hacia quienes confían en ti.',
+                'Sistemático': isPermanent ? 'Todo lo organizas paso a paso y con estructura.' : 'Usas sistemas y organización cuando el trabajo lo requiere.',
+                'Analítico': isPermanent ? 'Siempre examinas los detalles antes de actuar o decidir.' : 'Analizas profundamente cuando la decisión es importante.',
+                'Preciso': isPermanent ? 'Te aseguras de que todo esté correcto y sin errores.' : 'Eres más preciso cuando la exactitud es crítica.',
+                'Consciente': isPermanent ? 'Eres muy responsable y cumplidor por naturaleza.' : 'Muestras más consciencia cuando las responsabilidades aumentan.',
+                'Prudente': isPermanent ? 'Siempre consideras riesgos antes de tomar decisiones.' : 'Eres más cauteloso cuando los riesgos son altos.',
+                'Culto': isPermanent ? 'Tienes conocimientos amplios y te gusta aprender constantemente.' : 'Demuestras tu conocimiento cuando el tema lo amerita.'
+            };
+
+            return descriptions[trait] || (isPermanent ? 'Esta característica te define constantemente.' : 'Esta característica aparece en contextos específicos.');
+        }
+
+        function showEvaluation() {
+            document.getElementById('report-section').classList.remove('active');
+            document.getElementById('evaluation-section').classList.add('active');
+
+            // Reset form
+            responses = {};
+            completedBlocks = 0;
+            updateProgress();
+
+            // Clear all radio buttons
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeQuestions();
+            updateProgress();
         });
     </script>
 </body>
