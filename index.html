@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discus Clásico - Evaluación de Personalidad</title>
+    <title>Evaluación DISC - Docentes y Asistentes de la Educación</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js"></script>
@@ -121,12 +121,13 @@
     <div id="evaluation-section" class="evaluation-container active">
         <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg mt-8">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-800">Discus Clásico</h1>
-                <h2 class="text-2xl font-semibold text-gray-700 mt-2">Evaluación de Personalidad</h2>
+                <h1 class="text-3xl font-bold text-gray-800">Evaluación de Estilo Conductual DISC</h1>
+                <h2 class="text-2xl font-semibold text-gray-700 mt-2">Docentes y Asistentes de la Educación</h2>
+                <p class="text-gray-500 italic mt-1">Instrumento de autoconocimiento para el trabajo en el aula y la comunidad educativa</p>
             </div>
             <!-- Candidate Information -->
             <div class="section bg-gray-50 p-6 rounded-lg mb-6">
-                <h2 class="section-title mb-4">Información del Candidato</h2>
+                <h2 class="section-title mb-4">Información del/la Participante</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo:</label>
@@ -146,8 +147,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Posición/Cargo:</label>
-                        <input type="text" id="position" class="form-control" placeholder="Su posición actual">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cargo / Función:</label>
+                        <input type="text" id="position" class="form-control" placeholder="Ej: Docente de Ed. Básica, Educadora de Párvulos, Asistente de aula, Inspector/a">
                     </div>
                 </div>
             </div>
@@ -375,7 +376,7 @@
             }
 
             // Guardar el PDF
-            pdf.save('Informe_DISC.pdf');
+            pdf.save('Informe_DISC_Docentes_Asistentes.pdf');
         }
 
         function generateReport() {
@@ -422,14 +423,14 @@
             const reportHTML = `
                 <!-- Title Section -->
                 <div class="text-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-800">Discus Clásico Perfil de Personalidad Informe</h1>
+                    <h1 class="text-3xl font-bold text-gray-800">Informe de Perfil Conductual DISC</h1>
                     <h2 class="text-2xl font-semibold text-gray-700 mt-2">${candidateName}</h2>
                     <p class="text-gray-600">Fecha: ${new Date(analysisDate).toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
-                    <p class="text-gray-500 italic">Este informe está basado en el sistema DISC clásico.</p>
+                    <p class="text-gray-500 italic">Informe orientado al desarrollo profesional de docentes y asistentes de la educación, basado en el sistema DISC clásico.</p>
                 </div>
                 <!-- Candidate Details -->
                 <div class="section">
-                    <h2 class="section-title">Detalles del Candidato</h2>
+                    <h2 class="section-title">Antecedentes del/la Participante</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <p><strong>Nombre:</strong> ${candidateName}</p>
                         <p><strong>Fecha de Análisis:</strong> ${new Date(analysisDate).toLocaleDateString('es-ES', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
@@ -444,14 +445,14 @@
                 <!-- Introduction -->
                 <div class="section">
                     <h2 class="section-title">Introducción</h2>
-                    <p>Este informe está diseñado para proporcionar una visión general completa de la personalidad y el comportamiento de ${candidateName} desde múltiples perspectivas. Utiliza contenido gráfico y textual para mostrar cómo es probable que ${candidateName.split(' ')[0]} reaccione en diferentes situaciones laborales. El informe incluye una serie de análisis gráficos, como la serie completa de perfiles DISC, un análisis detallado de los cuatro factores DISC, un análisis de la tarjeta de estilo, un resumen de rasgos y una mirada a la tensión del perfil actual.</p>
+                    <p>Este informe está diseñado para ofrecer una visión integral del estilo conductual de ${candidateName} en el contexto educativo. A través de gráficos y descripciones, muestra cómo es probable que ${candidateName.split(' ')[0]} actúe en distintas situaciones propias de la labor educativa: el trabajo en el aula con estudiantes, la colaboración en el equipo docente y de asistentes, las reuniones y consejos de profesores, y la relación con la familia y los apoderados. El informe incluye la serie de perfiles DISC, el análisis de los cuatro factores, la tarjeta de estilo, un resumen de rasgos y una mirada al nivel de adaptación y tensión que la persona experimenta en su rol educativo.</p>
                 </div>
                 <!-- DISC Profile Series -->
                 <div class="section">
                     <h2 class="section-title">Serie de Perfiles de DISC</h2>
                     <div class="bg-blue-50 p-4 rounded-lg mb-4">
                         <p class="text-blue-900"><strong>¿Qué son los perfiles DISC?</strong></p>
-                        <p class="text-blue-800 text-sm mt-1">Imagina que tienes dos "versiones" de ti mismo: cómo eres naturalmente en casa con amigos (Perfil Interno) y cómo crees que debes actuar en el trabajo (Perfil Externo). El DISC analiza estas diferencias para ayudarte a entender tu comportamiento.</p>
+                        <p class="text-blue-800 text-sm mt-1">Imagina que tienes dos "versiones" de ti mismo/a: cómo eres naturalmente fuera del trabajo, con tu familia y amistades (Perfil Interno), y cómo crees que debes actuar dentro del establecimiento educacional, frente a tus estudiantes y colegas (Perfil Externo). El DISC analiza esas diferencias para ayudarte a entender tu estilo en el aula y en la comunidad escolar.</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -473,7 +474,7 @@
                         </div>
 
                         <div class="bg-white border-2 border-blue-200 rounded-lg p-4 hidden-section" id="externalProfileSection">
-                            <h3 class="subsection-title text-blue-700">💼 Perfil Externo - "Cómo creo que debo ser en el trabajo"</h3>
+                            <h3 class="subsection-title text-blue-700">💼 Perfil Externo - "Cómo creo que debo ser en la escuela"</h3>
                             <p class="text-blue-600 text-sm mb-2"><strong>Tipo:</strong> ${externalProfile}</p>
                             <div class="bg-blue-50 p-4 rounded">
                                 <div class="grid grid-cols-4 gap-2 text-center text-sm">
@@ -484,8 +485,8 @@
                                 </div>
                             </div>
                             <div class="mt-3 text-sm">
-                                <p><strong>¿Qué significa?</strong> Es la "máscara" que usas en el trabajo - cómo crees que debes comportarte para tener éxito en tu entorno laboral.</p>
-                                <p class="mt-2"><strong>Ejemplo:</strong> ${externalProfile.includes('D') ? 'En el trabajo, sientes que debes ser más directo y tomar decisiones rápidas, aunque naturalmente prefieras consenso.' : externalProfile.includes('I') ? 'En la oficina, crees que debes ser más sociable y persuasivo para influir en tu equipo.' : externalProfile.includes('S') ? 'En tu trabajo, piensas que debes ser más cooperativo y evitar conflictos para mantener el ambiente.' : 'En el entorno laboral, crees que debes ser más detallista y seguir procedimientos estrictos.'}</p>
+                                <p><strong>¿Qué significa?</strong> Es la "máscara profesional" que usas en el establecimiento educacional: cómo crees que debes comportarte frente a estudiantes, colegas y la dirección para desempeñar bien tu rol.</p>
+                                <p class="mt-2"><strong>Ejemplo:</strong> ${externalProfile.includes('D') ? 'En el aula sientes que debes ser más firme y directivo/a, marcando el ritmo de la clase y tomando decisiones rápidas sobre la disciplina, aunque naturalmente prefieras el consenso.' : externalProfile.includes('I') ? 'Frente al curso crees que debes ser más expresivo/a y motivador/a, animando a los estudiantes y manteniendo un clima entusiasta para captar su atención.' : externalProfile.includes('S') ? 'En la escuela piensas que debes ser muy cooperativo/a y paciente, evitando conflictos para sostener un buen clima de convivencia con el curso y el equipo.' : 'En tu labor docente crees que debes ser más metódico/a, planificar al detalle y seguir rigurosamente las normas y procedimientos del establecimiento.'}</p>
                             </div>
                         </div>
 
@@ -502,7 +503,7 @@
                             </div>
                             <div class="mt-3 text-sm">
                                 <p><strong>¿Qué significa?</strong> Es el promedio entre tu "yo auténtico" y tu "yo laboral" - tu comportamiento más común en la mayoría de situaciones.</p>
-                                <p class="mt-2"><strong>Ejemplo:</strong> ${summaryProfile.includes('D') ? 'Generalmente eres una persona decidida que toma iniciativa, tanto en lo personal como en lo profesional.' : summaryProfile.includes('I') ? 'Normalmente eres sociable y expresivo, disfrutando tanto las reuniones familiares como las de trabajo.' : summaryProfile.includes('S') ? 'Usualmente eres estable y cooperativo, buscando armonía en todos tus entornos.' : 'Típicamente eres organizado y detallista, aplicando la misma precisión en casa y en el trabajo.'}</p>
+                                <p class="mt-2"><strong>Ejemplo:</strong> ${summaryProfile.includes('D') ? 'Generalmente eres una persona decidida que toma la iniciativa, tanto en tu vida personal como en la conducción de tu curso y tus proyectos pedagógicos.' : summaryProfile.includes('I') ? 'Normalmente eres expresivo/a y cercano/a, y disfrutas tanto las reuniones con tu familia como la interacción con estudiantes, colegas y apoderados.' : summaryProfile.includes('S') ? 'Usualmente eres estable y cooperativo/a, buscando armonía y un buen clima de convivencia tanto en casa como en la escuela.' : 'Típicamente eres organizado/a y detallista, aplicando la misma rigurosidad en tu vida personal y en la planificación de tus clases.'}</p>
                             </div>
                         </div>
 
@@ -517,15 +518,15 @@
                                 </div>
                             </div>
                             <div class="mt-3 text-sm">
-                                <p><strong>¿Qué significa?</strong> Muestra qué tanto cambias tu comportamiento entre ser tú mismo y adaptarte al trabajo.</p>
+                                <p><strong>¿Qué significa?</strong> Muestra qué tanto cambias tu comportamiento entre tu forma natural de ser y cómo actúas en el establecimiento educacional.</p>
                                 <p class="mt-2"><strong>Las flechas indican:</strong></p>
                                 <ul class="text-xs ml-4 mt-1">
-                                    <li><span class="text-green-600">↑</span> = En el trabajo actúas MÁS así que naturalmente</li>
-                                    <li><span class="text-red-600">↓</span> = En el trabajo actúas MENOS así que naturalmente</li>
-                                    <li><span class="text-gray-600">=</span> = Eres igual en ambos entornos (sin cambio)</li>
+                                    <li><span class="text-green-600">↑</span> = En tu rol educativo actúas MÁS así que naturalmente</li>
+                                    <li><span class="text-red-600">↓</span> = En tu rol educativo actúas MENOS así que naturalmente</li>
+                                    <li><span class="text-gray-600">=</span> = Eres igual dentro y fuera de la escuela (sin cambio)</li>
                                 </ul>
                                 <div class="mt-2 p-2 bg-orange-100 rounded text-xs">
-                                    <strong>Interpretación:</strong> ${Math.abs(changePattern.D) > 15 || Math.abs(changePattern.I) > 15 || Math.abs(changePattern.S) > 15 || Math.abs(changePattern.C) > 15 ? 'Te adaptas significativamente al trabajo. Esto puede generar algo de estrés si se mantiene por mucho tiempo.' : 'Mantienes bastante consistencia entre tu forma natural de ser y cómo actúas en el trabajo. Esto es saludable.'}
+                                    <strong>Interpretación:</strong> ${Math.abs(changePattern.D) > 15 || Math.abs(changePattern.I) > 15 || Math.abs(changePattern.S) > 15 || Math.abs(changePattern.C) > 15 ? 'Te adaptas significativamente a las exigencias de tu rol educativo. Esto puede generar desgaste si se mantiene por mucho tiempo.' : 'Mantienes bastante consistencia entre tu forma natural de ser y cómo actúas en la escuela. Esto es saludable y sostenible.'}
                                 </div>
                             </div>
                         </div>
@@ -547,8 +548,8 @@
                                 <h4 class="font-semibold text-red-700 mb-3 flex items-center">
                                     <span class="mr-2">⚠️</span>Lo que te causa estrés:
                                 </h4>
-                                <p class="text-red-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Rutina y pérdida de control' : summaryProfile.includes('I') ? 'Aislamiento y detalles complejos' : summaryProfile.includes('S') ? 'Incertidumbre y cambios súbitos' : 'Críticas y decisiones precipitadas'}</p>
-                                <p class="text-red-700 text-sm">${summaryProfile.includes('D') ? 'Te frustras cuando tienes que seguir siempre las mismas rutinas o cuando otros toman decisiones que consideras tuyas.' : summaryProfile.includes('I') ? 'Te sientes incómodo trabajando solo por mucho tiempo o cuando tienes que analizar datos muy técnicos.' : summaryProfile.includes('S') ? 'Te genera ansiedad no saber qué esperar o cuando hay cambios constantes en los planes.' : 'Te pone nervioso recibir críticas directas o tener que decidir rápidamente sin analizar opciones.'}</p>
+                                <p class="text-red-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Rutina rígida y pérdida de autonomía' : summaryProfile.includes('I') ? 'Aislamiento y tareas administrativas minuciosas' : summaryProfile.includes('S') ? 'Incertidumbre y cambios curriculares súbitos' : 'Críticas a su trabajo y decisiones apresuradas'}</p>
+                                <p class="text-red-700 text-sm">${summaryProfile.includes('D') ? 'Te frustras cuando debes ceñirte siempre a la misma rutina o cuando otros (dirección, UTP) toman decisiones sobre tu aula que sientes que te corresponden.' : summaryProfile.includes('I') ? 'Te incomoda pasar mucho tiempo trabajando en solitario (corrigiendo, llenando registros) o lidiar con planillas y documentación muy técnica.' : summaryProfile.includes('S') ? 'Te genera ansiedad no saber qué esperar, los cambios constantes de horario, curso o lineamientos a mitad de año.' : 'Te pone nervioso/a recibir críticas directas a tu planificación o tener que improvisar y decidir sin tiempo para analizar.'}</p>
                             </div>
 
                             <!-- Cómo reaccionas bajo presión -->
@@ -557,7 +558,7 @@
                                     <span class="mr-2">🔥</span>Cuando estás bajo presión:
                                 </h4>
                                 <p class="text-yellow-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Te vuelves más directo y exigente' : summaryProfile.includes('I') ? 'Puedes desorganizarte o hablar demasiado' : summaryProfile.includes('S') ? 'Te vuelves indeciso o rígido' : 'Tiendes a evitar o ser perfeccionista'}</p>
-                                <p class="text-yellow-700 text-sm">${summaryProfile.includes('D') ? 'Cuando hay mucha presión, puedes volvertepoco paciente con otros y tomar decisiones muy rápidas sin consultar.' : summaryProfile.includes('I') ? 'Bajo estrés, puedes dispersarte fácilmente o hablar mucho sin llegar al punto principal.' : summaryProfile.includes('S') ? 'Cuando hay presión, te cuesta tomar decisiones o te aferras mucho a lo conocido.' : 'Bajo estrés, puedes evitar tareas difíciles o volverte demasiado detallista y lento.'}</p>
+                                <p class="text-yellow-700 text-sm">${summaryProfile.includes('D') ? 'Bajo mucha presión puedes volverte poco paciente con estudiantes o colegas y tomar decisiones muy rápidas sin consultar al equipo.' : summaryProfile.includes('I') ? 'Cuando hay estrés, puedes dispersarte, extender demasiado las explicaciones o hablar mucho sin cerrar las ideas principales de la clase.' : summaryProfile.includes('S') ? 'Ante la presión te cuesta tomar decisiones rápidas y tiendes a aferrarte a lo conocido, resistiéndote a probar nuevas estrategias.' : 'Bajo estrés puedes postergar tareas difíciles o volverte demasiado detallista, perdiendo de vista los plazos y el avance del curso.'}</p>
                             </div>
 
                             <!-- En lo que te enfocas -->
@@ -565,8 +566,8 @@
                                 <h4 class="font-semibold text-green-700 mb-3 flex items-center">
                                     <span class="mr-2">🎯</span>En lo que te enfocas:
                                 </h4>
-                                <p class="text-green-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Resultados y eficiencia' : summaryProfile.includes('I') ? 'Personas y entusiasmo' : summaryProfile.includes('S') ? 'Cooperación y estabilidad' : 'Exactitud y planificación'}</p>
-                                <p class="text-green-700 text-sm">${summaryProfile.includes('D') ? 'Tu atención se centra en lograr metas rápidamente y encontrar la forma más eficiente de hacer las cosas.' : summaryProfile.includes('I') ? 'Te importa más cómo se sienten las personas y mantener un ambiente positivo y motivador.' : summaryProfile.includes('S') ? 'Buscas que todos trabajen bien juntos y que haya un ambiente cómodo y predecible.' : 'Te concentras en que todo esté correcto, bien planificado y sin errores.'}</p>
+                                <p class="text-green-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Logros de aprendizaje y eficiencia' : summaryProfile.includes('I') ? 'Vínculo con estudiantes y motivación' : summaryProfile.includes('S') ? 'Convivencia y clima de aula estable' : 'Rigurosidad y planificación'}</p>
+                                <p class="text-green-700 text-sm">${summaryProfile.includes('D') ? 'Tu atención se centra en que los estudiantes alcancen las metas de aprendizaje y en hacer la clase de la forma más eficiente y directa posible.' : summaryProfile.includes('I') ? 'Te importa el vínculo con tus estudiantes y sostener un ambiente positivo y motivador donde quieran participar.' : summaryProfile.includes('S') ? 'Buscas que el curso funcione en armonía, con un clima cómodo, predecible y de apoyo mutuo.' : 'Te concentras en que la planificación, las evaluaciones y los registros estén correctos, completos y sin errores.'}</p>
                             </div>
                         </div>
 
@@ -577,7 +578,7 @@
                             </h4>
                             <div class="bg-indigo-50 p-4 rounded">
                                 <p class="text-indigo-800 font-medium mb-2">${summaryProfile.includes('D') ? 'Autoridad y Control' : summaryProfile.includes('I') ? 'Inspiración y Persuasión' : summaryProfile.includes('S') ? 'Cooperación y Apoyo' : 'Datos y Planificación'}</p>
-                                <p class="text-indigo-700 text-sm">${summaryProfile.includes('D') ? 'Cuando quieres convencer a alguien, usas tu autoridad y presentas argumentos directos sobre por qué tu forma es la mejor.' : summaryProfile.includes('I') ? 'Para influir en otros, los inspiras con entusiasmo y los convences de que tu idea será emocionante y beneficiosa.' : summaryProfile.includes('S') ? 'Prefieres trabajar junto con otros, mostrando cómo tu propuesta ayuda a todos y mejora la cooperación.' : 'Cuando quieres convencer, presentas datos, análisis y planes detallados que demuestran que tu propuesta es la más segura.'}</p>
+                                <p class="text-indigo-700 text-sm">${summaryProfile.includes('D') ? 'Cuando quieres convencer a estudiantes o colegas, usas tu autoridad y presentas argumentos directos sobre por qué tu forma de hacer las cosas es la más eficaz.' : summaryProfile.includes('I') ? 'Para influir, inspiras con entusiasmo: contagias tu energía y convences a estudiantes y colegas de que la idea o el aprendizaje será motivador y valioso.' : summaryProfile.includes('S') ? 'Prefieres construir en conjunto, mostrando cómo tu propuesta beneficia a todo el curso o equipo y favorece la colaboración y el buen trato.' : 'Cuando quieres convencer, te apoyas en datos, evidencia pedagógica y planificación detallada que demuestran que tu propuesta es la más sólida.'}</p>
                             </div>
                         </div>
 
@@ -642,7 +643,7 @@
                             </div>
 
                             <div class="mt-4 p-3 bg-emerald-100 rounded-lg">
-                                <p class="text-emerald-800 text-sm"><strong>💡 En tu vida diaria:</strong> Estas características aparecen automáticamente en tu comportamiento, tanto en casa como en el trabajo. Es tu "esencia" que otros reconocen fácilmente.</p>
+                                <p class="text-emerald-800 text-sm"><strong>💡 En tu día a día:</strong> Estas características aparecen automáticamente en tu comportamiento, tanto dentro del aula como fuera de ella. Es tu "esencia" que estudiantes y colegas reconocen fácilmente.</p>
                             </div>
                         </div>
 
@@ -674,20 +675,20 @@
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-white p-4 rounded-lg">
-                                <h5 class="font-medium text-purple-700 mb-2">En reuniones de trabajo:</h5>
-                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Tomas la iniciativa, propones soluciones directas y buscas llegar rápido a decisiones.' : summaryProfile.includes('I') ? 'Compartes ideas con entusiasmo, motivas al equipo y mantienes un ambiente positivo.' : summaryProfile.includes('S') ? 'Escuchas a todos, buscas consenso y te aseguras de que nadie se sienta excluido.' : 'Haces preguntas detalladas, analizas pros y contras antes de opinar.'}</p>
+                                <h5 class="font-medium text-purple-700 mb-2">En consejos de profesores y reuniones de equipo:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Tomas la iniciativa, propones soluciones directas y empujas para llegar pronto a acuerdos y decisiones.' : summaryProfile.includes('I') ? 'Compartes ideas con entusiasmo, motivas a tus colegas y ayudas a mantener un clima positivo en la reunión.' : summaryProfile.includes('S') ? 'Escuchas a todos, buscas consenso y te aseguras de que ningún colega quede excluido de la conversación.' : 'Haces preguntas precisas, revisas la evidencia y analizas pros y contras antes de opinar o comprometerte.'}</p>
                             </div>
                             <div class="bg-white p-4 rounded-lg">
-                                <h5 class="font-medium text-purple-700 mb-2">Cuando hay problemas:</h5>
-                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Buscas soluciones rápidas, tomas el control de la situación y diriges a otros hacia la solución.' : summaryProfile.includes('I') ? 'Mantienes el optimismo del equipo, buscas apoyo en otros y enfocas en lo positivo.' : summaryProfile.includes('S') ? 'Ofreces apoyo emocional, buscas mantener la calma y ayudas a que todos cooperen.' : 'Analizas las causas, investigas opciones y propones planes detallados para evitar que se repita.'}</p>
+                                <h5 class="font-medium text-purple-700 mb-2">Ante problemas de conducta o convivencia en el aula:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Buscas soluciones rápidas, tomas el control de la situación y rediriges al curso con firmeza hacia la tarea.' : summaryProfile.includes('I') ? 'Mantienes el ánimo del grupo, apelas al vínculo con los estudiantes y reconduces la situación desde lo positivo.' : summaryProfile.includes('S') ? 'Ofreces contención, buscas calmar los ánimos y mediar para que el curso recupere un buen clima de convivencia.' : 'Analizas qué originó el problema, revisas el reglamento y los protocolos y propones un procedimiento claro para que no se repita.'}</p>
                             </div>
                             <div class="bg-white p-4 rounded-lg">
-                                <h5 class="font-medium text-purple-700 mb-2">En proyectos nuevos:</h5>
-                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Te emocionas con los desafíos, quieres liderar el proyecto y establecer metas ambiciosas.' : summaryProfile.includes('I') ? 'Generas entusiasmo en el equipo, propones ideas creativas y motivas a todos a participar.' : summaryProfile.includes('S') ? 'Te aseguras de entender bien las expectativas, planificas paso a paso y coordinas con el equipo.' : 'Investigas a fondo el proyecto, haces planes detallados y te aseguras de tener todos los recursos necesarios.'}</p>
+                                <h5 class="font-medium text-purple-700 mb-2">En proyectos pedagógicos o innovaciones:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Te entusiasman los desafíos, quieres liderar la iniciativa y fijar metas ambiciosas para el curso o el establecimiento.' : summaryProfile.includes('I') ? 'Generas entusiasmo en el equipo, aportas ideas creativas y motivas a colegas y estudiantes a sumarse.' : summaryProfile.includes('S') ? 'Te aseguras de comprender bien las expectativas, planificas paso a paso y coordinas con el equipo para implementarlo sin sobresaltos.' : 'Investigas a fondo el proyecto, diseñas un plan detallado y te aseguras de contar con los recursos y materiales necesarios.'}</p>
                             </div>
                             <div class="bg-white p-4 rounded-lg">
-                                <h5 class="font-medium text-purple-700 mb-2">Con compañeros difíciles:</h5>
-                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Confrontas directamente los problemas, estableces límites claros y buscas resoluciones rápidas.' : summaryProfile.includes('I') ? 'Intentas ganar su confianza con carisma, buscas puntos en común y mantienes la comunicación abierta.' : summaryProfile.includes('S') ? 'Eres paciente, intentas entender su perspectiva y buscas formas de trabajar en armonía.' : 'Documentas las situaciones, sigues los procedimientos apropiados y buscas soluciones sistemáticas.'}</p>
+                                <h5 class="font-medium text-purple-700 mb-2">Con colegas o apoderados difíciles:</h5>
+                                <p class="text-purple-600 text-sm">${summaryProfile.includes('D') ? 'Abordas el problema de frente, planteas límites claros y buscas resolver la situación de manera rápida y directa.' : summaryProfile.includes('I') ? 'Intentas generar confianza con cercanía, buscas puntos en común y mantienes el canal de comunicación siempre abierto.' : summaryProfile.includes('S') ? 'Eres paciente, procuras entender la perspectiva del otro y buscas acuerdos que mantengan una relación cordial.' : 'Registras lo ocurrido, te apoyas en los protocolos y conductos regulares del establecimiento y propones soluciones sistemáticas.'}</p>
                             </div>
                         </div>
                     </div>
@@ -697,7 +698,7 @@
                     <h2 class="section-title">Nivel de Adaptación y Estrés</h2>
                     <div class="bg-amber-50 p-4 rounded-lg mb-4">
                         <p class="text-amber-900"><strong>¿Qué es la tensión de perfil?</strong></p>
-                        <p class="text-amber-800 text-sm mt-1">Es como medir qué tanto "esfuerzo extra" haces para adaptarte al trabajo. Imagina que tu personalidad natural es como tu ropa cómoda de casa, y en el trabajo tienes que usar un traje - la tensión mide qué tan incómodo te sientes con ese "traje laboral".</p>
+                        <p class="text-amber-800 text-sm mt-1">Es como medir cuánto "esfuerzo extra" haces para adaptarte a las exigencias de tu rol educativo. Imagina que tu estilo natural es tu ropa cómoda de casa, y tu rol frente al curso es un "traje profesional": la tensión mide qué tan cómodo/a te sientes usando ese traje durante la jornada escolar.</p>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -751,11 +752,11 @@
                                     ${(() => {
                                         const maxChange = Math.max(Math.abs(changePattern.D), Math.abs(changePattern.I), Math.abs(changePattern.S), Math.abs(changePattern.C));
                                         if (maxChange < 10) {
-                                            return '¡Excelente! Puedes ser tú mismo en el trabajo sin sentir mucha presión. Tu personalidad natural encaja bien con lo que tu trabajo requiere.';
+                                            return '¡Excelente! Puedes ser tú mismo/a en tu rol educativo sin sentir mucha presión. Tu estilo natural encaja bien con lo que tu trabajo con estudiantes y colegas requiere.';
                                         } else if (maxChange < 20) {
-                                            return 'Haces algunos ajustes para adaptarte al trabajo, lo cual es normal. Ocasionalmente puedes sentir un poco de estrés, pero generalmente lo manejas bien.';
+                                            return 'Haces algunos ajustes para responder a las exigencias de la escuela, lo cual es normal. Ocasionalmente puedes sentir algo de desgaste, pero en general lo manejas bien.';
                                         } else {
-                                            return 'Estás haciendo cambios significativos para adaptarte al trabajo. Esto puede generar estrés si se mantiene por mucho tiempo. Considera buscar formas de ser más auténtico.';
+                                            return 'Estás haciendo cambios importantes para adaptarte a tu rol educativo. Sostenerlo mucho tiempo puede agotarte; conviene buscar espacios para desempeñarte de forma más auténtica.';
                                         }
                                     })()}
                                 </p>
@@ -782,20 +783,20 @@
 
                                         if (maxFactor === 'D') {
                                             return isIncreasing ?
-                                                'En el trabajo intentas ser más directo y decisivo de lo que eres naturalmente. Esto puede agotarte si lo mantienes todo el tiempo.' :
-                                                'En el trabajo reprimes tu tendencia natural a tomar control y ser directo. Esto puede frustrarte a largo plazo.';
+                                                'En tu rol educativo intentas ser más directivo/a y decidido/a de lo que eres naturalmente. Sostenerlo durante toda la jornada puede agotarte.' :
+                                                'En tu rol educativo reprimes tu tendencia natural a tomar el control y ser directo/a. Esto puede frustrarte a largo plazo.';
                                         } else if (maxFactor === 'I') {
                                             return isIncreasing ?
-                                                'En el trabajo te esfuerzas por ser más sociable y expresivo de lo que eres naturalmente. Esto puede ser agotador en roles muy sociales.' :
-                                                'En el trabajo limitas tu expresividad y sociabilidad natural. Esto puede hacerte sentir menos auténtico.';
+                                                'En el aula te esfuerzas por ser más expresivo/a y motivador/a de lo que eres naturalmente. Esto puede ser agotador en cursos muy demandantes socialmente.' :
+                                                'En tu rol educativo limitas tu expresividad y cercanía natural. Esto puede hacerte sentir menos auténtico/a frente a estudiantes y colegas.';
                                         } else if (maxFactor === 'S') {
                                             return isIncreasing ?
-                                                'En el trabajo intentas ser más paciente y cooperativo de lo que eres naturalmente. Esto puede generar frustración interna.' :
-                                                'En el trabajo sientes presión para ser menos estable y más ágil de lo que prefieres naturalmente.';
+                                                'En tu rol educativo intentas ser más paciente y conciliador/a de lo que eres naturalmente. Esto puede generar frustración interna.' :
+                                                'En tu rol educativo sientes presión por ser menos estable y más ágil de lo que prefieres, adaptándote a cambios constantes.';
                                         } else {
                                             return isIncreasing ?
-                                                'En el trabajo te sientes presionado a ser más detallista y cuidadoso de lo que eres naturalmente. Esto puede ralentizarte.' :
-                                                'En el trabajo sientes que debes ser menos perfeccionista y más rápido de lo que prefieres naturalmente.';
+                                                'En tu rol educativo te sientes presionado/a a ser más detallista y meticuloso/a de lo que eres naturalmente. Esto puede ralentizar tu trabajo.' :
+                                                'En tu rol educativo sientes que debes ser menos perfeccionista y más rápido/a de lo que prefieres, sacrificando la rigurosidad.';
                                         }
                                     })()}
                                 </p>
@@ -823,25 +824,25 @@
                                 } else if (maxChange < 20) {
                                     return `
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-indigo-700 text-sm">⚖️ <strong>Equilibra tu energía:</strong> Tómate descansos para "recargarte" siendo tú mismo.</p>
+                                            <p class="text-indigo-700 text-sm">⚖️ <strong>Cuida tu energía:</strong> Reserva momentos en la jornada para "recargarte" siendo tú mismo/a (un recreo tranquilo, una pausa entre clases).</p>
                                         </div>
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-indigo-700 text-sm">🗣️ <strong>Comunica tus preferencias:</strong> Habla con tu jefe sobre tu estilo natural de trabajo.</p>
+                                            <p class="text-indigo-700 text-sm">🗣️ <strong>Comunica tus preferencias:</strong> Conversa con tu jefatura técnica o Dirección sobre tu estilo natural de enseñanza y de trabajo en equipo.</p>
                                         </div>
                                     `;
                                 } else {
                                     return `
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-indigo-700 text-sm">🔄 <strong>Busca más autenticidad:</strong> Encuentra maneras de usar más tu estilo natural en el trabajo.</p>
+                                            <p class="text-indigo-700 text-sm">🔄 <strong>Busca más autenticidad:</strong> Encuentra maneras de incorporar tu estilo natural en tu forma de hacer clases y de relacionarte con el curso.</p>
                                         </div>
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-indigo-700 text-sm">💬 <strong>Habla con tu supervisor:</strong> Discute cómo puedes aportar más usando tus fortalezas naturales.</p>
+                                            <p class="text-indigo-700 text-sm">💬 <strong>Habla con tu jefatura o UTP:</strong> Conversa cómo puedes aportar más desde tus fortalezas naturales dentro del equipo.</p>
                                         </div>
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-indigo-700 text-sm">🏠 <strong>Compensa fuera del trabajo:</strong> Dedica tiempo a actividades que te permitan ser completamente tú mismo.</p>
+                                            <p class="text-indigo-700 text-sm">🏠 <strong>Cuida tu bienestar fuera de la escuela:</strong> Dedica tiempo a actividades que te permitan desconectarte y recuperar energía.</p>
                                         </div>
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-indigo-700 text-sm">🎯 <strong>Considera un cambio:</strong> Si es posible, busca roles que se alineen mejor con tu estilo natural.</p>
+                                            <p class="text-indigo-700 text-sm">🎯 <strong>Explora ajustes de rol:</strong> Si es posible, busca funciones, niveles o asignaturas que se alineen mejor con tu estilo natural.</p>
                                         </div>
                                     `;
                                 }
@@ -852,57 +853,57 @@
                 <!-- Textual Report -->
                 <div class="section">
                     <h2 class="section-title">Informe Textual</h2>
-                    <p>El informe textual contiene secciones detalladas en lenguaje natural que discuten el comportamiento de ${candidateName.split(' ')[0]}.</p>
+                    <p>El informe textual contiene secciones detalladas, en lenguaje natural, que describen el estilo conductual de ${candidateName.split(' ')[0]} en el ejercicio de su rol educativo.</p>
                     <div class="space-y-4 mt-4">
                         <div class="border-l-4 border-blue-500 pl-4">
                             <h4 class="font-semibold">1. Generalidades:</h4>
-                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} es decidido, orientado a resultados y prefiere tomar el control de las situaciones. Es competitivo y busca desafíos que le permitan demostrar su liderazgo.` : summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} es entusiasta, comunicativo y disfruta interactuando con otros. Le gusta inspirar y motivar a su equipo con su energía positiva.` : summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} es estable, cooperativo y trabaja a un ritmo constante para producir trabajo de calidad. Prefiere entornos con apoyo y valora la armonía del equipo.` : `${candidateName.split(' ')[0]} es analítico, preciso y se enfoca en los detalles. Prefiere seguir procedimientos establecidos y asegurarse de que todo esté bien documentado.`}</p>
+                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} es decidido/a, orientado/a a logros y tiende a tomar el control de la dinámica del aula. Es competitivo/a y busca desafíos pedagógicos donde pueda ejercer liderazgo y ver resultados de aprendizaje concretos.` : summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} es entusiasta y comunicativo/a, y disfruta el vínculo con sus estudiantes y colegas. Le motiva inspirar y animar al curso con su energía positiva.` : summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} es estable, cooperativo/a y trabaja a un ritmo constante para sostener clases de calidad. Prefiere ambientes con apoyo mutuo y valora la buena convivencia del curso y del equipo.` : `${candidateName.split(' ')[0]} es analítico/a, riguroso/a y se enfoca en los detalles. Prefiere planificar, seguir los lineamientos del establecimiento y asegurarse de que todo quede bien documentado.`}</p>
                         </div>
 
                         <div class="border-l-4 border-green-500 pl-4">
                             <h4 class="font-semibold">2. Adaptación de Comportamiento:</h4>
-                            <p class="text-sm">${Math.abs(changePattern.D) > 10 || Math.abs(changePattern.I) > 10 || Math.abs(changePattern.S) > 10 || Math.abs(changePattern.C) > 10 ? `${candidateName.split(' ')[0]} adapta significativamente su comportamiento para cumplir con las condiciones laborales percibidas, mostrando flexibilidad pero posible tensión.` : `${candidateName.split(' ')[0]} mantiene una consistencia entre su estilo natural y las demandas del trabajo, sugiriendo una buena alineación con su rol actual.`}</p>
+                            <p class="text-sm">${Math.abs(changePattern.D) > 10 || Math.abs(changePattern.I) > 10 || Math.abs(changePattern.S) > 10 || Math.abs(changePattern.C) > 10 ? `${candidateName.split(' ')[0]} adapta significativamente su comportamiento para responder a las exigencias percibidas de su rol educativo, mostrando flexibilidad pero también una posible tensión que conviene monitorear.` : `${candidateName.split(' ')[0]} mantiene una buena consistencia entre su estilo natural y las demandas de su labor educativa, lo que sugiere una adecuada alineación con su rol actual.`}</p>
                         </div>
 
                         <div class="border-l-4 border-yellow-500 pl-4">
                             <h4 class="font-semibold">3. Ventajas y Desventajas:</h4>
-                            <p class="text-sm"><strong>Ventajas:</strong> ${summaryProfile.includes('D') ? 'Toma decisiones rápidas, orientado a resultados, liderazgo natural.' : summaryProfile.includes('I') ? 'Comunicación efectiva, motivación de equipos, adaptabilidad social.' : summaryProfile.includes('S') ? 'Trabajo en equipo, estabilidad, lealtad y paciencia.' : 'Precisión, análisis detallado, seguimiento de procedimientos.'}</p>
-                            <p class="text-sm"><strong>Áreas de mejora:</strong> ${summaryProfile.includes('D') ? 'Puede ser impaciente, necesita trabajar en la escucha activa.' : summaryProfile.includes('I') ? 'Necesita enfocarse más en detalles y seguimiento.' : summaryProfile.includes('S') ? 'Puede resistirse al cambio, necesita desarrollar más asertividad.' : 'Puede ser perfeccionista, necesita ser más decisivo.'}</p>
+                            <p class="text-sm"><strong>Fortalezas:</strong> ${summaryProfile.includes('D') ? 'Toma de decisiones ágil frente al curso, orientación a logros de aprendizaje, liderazgo natural en el equipo.' : summaryProfile.includes('I') ? 'Comunicación cercana y motivadora, capacidad de enganchar al curso, buen vínculo con estudiantes y apoderados.' : summaryProfile.includes('S') ? 'Trabajo colaborativo, estabilidad y constancia, paciencia y contención del clima de aula.' : 'Rigurosidad en la planificación, análisis detallado, cumplimiento de normas y protocolos.'}</p>
+                            <p class="text-sm"><strong>Áreas de desarrollo:</strong> ${summaryProfile.includes('D') ? 'Puede ser impaciente con el ritmo de algunos estudiantes; conviene reforzar la escucha activa y la flexibilidad.' : summaryProfile.includes('I') ? 'Conviene fortalecer el foco en los detalles, los registros y el seguimiento sistemático.' : summaryProfile.includes('S') ? 'Puede resistirse a los cambios; conviene desarrollar mayor asertividad y apertura a la innovación.' : 'Puede tender al perfeccionismo; conviene ganar agilidad para decidir y avanzar.'}</p>
                         </div>
 
                         <div class="border-l-4 border-red-500 pl-4">
                             <h4 class="font-semibold">4. Estilo de Comunicación:</h4>
-                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} prefiere comunicación directa y eficiente, enfocándose en resultados y decisiones rápidas.` : summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} es expresivo y persuasivo, prefiere la comunicación cara a cara y disfruta las interacciones sociales.` : summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} es diplomático y cooperativo, prefiere evitar conflictos y mantener relaciones armoniosas.` : `${candidateName.split(' ')[0]} es preciso y formal, prefiere comunicarse por escrito y con información detallada.`}</p>
+                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} prefiere una comunicación directa y eficiente, centrada en instrucciones claras, metas y decisiones rápidas con el curso y el equipo.` : summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} es expresivo/a y persuasivo/a; prefiere la comunicación cara a cara y aprovecha la interacción para motivar a estudiantes y colegas.` : summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} es diplomático/a y cercano/a; prefiere evitar los conflictos y sostener relaciones armoniosas con estudiantes, colegas y apoderados.` : `${candidateName.split(' ')[0]} es preciso/a y formal; prefiere comunicarse por escrito, con información detallada y respaldada en evidencia o normativa.`}</p>
                         </div>
 
                         <div class="border-l-4 border-purple-500 pl-4">
                             <h4 class="font-semibold">5. Toma de Decisiones:</h4>
-                            <p class="text-sm">${summaryProfile.includes('D') ? 'Toma decisiones rápidas basándose en objetivos claros y resultados esperados.' : summaryProfile.includes('I') ? 'Considera el impacto en las personas y busca el consenso del grupo antes de decidir.' : summaryProfile.includes('S') ? 'Prefiere discutir con compañeros y buscar estabilidad antes de tomar decisiones importantes.' : 'Analiza cuidadosamente todos los datos y considera múltiples opciones antes de decidir.'}</p>
+                            <p class="text-sm">${summaryProfile.includes('D') ? 'Decide con rapidez, basándose en metas claras y en los logros de aprendizaje esperados.' : summaryProfile.includes('I') ? 'Considera el impacto en las personas y busca el respaldo de colegas y estudiantes antes de decidir.' : summaryProfile.includes('S') ? 'Prefiere conversar con el equipo y resguardar la estabilidad del curso antes de tomar decisiones importantes.' : 'Analiza con cuidado la información disponible y evalúa varias opciones antes de resolver.'}</p>
                         </div>
                     </div>
                 </div>
                 <!-- Relationship Keynotes -->
                 <div class="section">
-                    <h2 class="section-title">Keynotes de Relación</h2>
+                    <h2 class="section-title">Claves para Relacionarse con el Equipo Educativo</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-red-50 p-4 rounded-lg">
-                            <h3 class="subsection-title text-red-700">Con Personas de Alto Dominio</h3>
-                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} puede competir por el liderazgo. Es importante establecer roles claros y enfoques colaborativos.` : `${candidateName.split(' ')[0]} puede sentirse presionado por individuos muy directos. Necesita tiempo para procesar las demandas.`}</p>
+                            <h3 class="subsection-title text-red-700">Con colegas de Alta Dominancia (D)</h3>
+                            <p class="text-sm">${summaryProfile.includes('D') ? `${candidateName.split(' ')[0]} puede competir por el liderazgo con otros colegas directivos. Conviene acordar roles claros y enfoques colaborativos dentro del equipo.` : `${candidateName.split(' ')[0]} puede sentirse presionado/a por colegas muy directos/as. Necesita su espacio y tiempo para procesar las exigencias.`}</p>
                         </div>
 
                         <div class="bg-yellow-50 p-4 rounded-lg">
-                            <h3 class="subsection-title text-yellow-700">Con Personas de Alta Influencia</h3>
-                            <p class="text-sm">${summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} disfruta las interacciones sociales pero puede distraerse de las tareas importantes.` : `${candidateName.split(' ')[0]} puede encontrar desafiante el estilo expresivo, prefiriendo comunicación más estructurada.`}</p>
+                            <h3 class="subsection-title text-yellow-700">Con colegas de Alta Influencia (I)</h3>
+                            <p class="text-sm">${summaryProfile.includes('I') ? `${candidateName.split(' ')[0]} disfruta la interacción con colegas expresivos, aunque juntos pueden distraerse de las tareas y plazos importantes.` : `${candidateName.split(' ')[0]} puede encontrar desafiante el estilo muy expresivo; prefiere una comunicación más estructurada y al grano.`}</p>
                         </div>
 
                         <div class="bg-green-50 p-4 rounded-lg">
-                            <h3 class="subsection-title text-green-700">Con Personas de Alta Estabilidad</h3>
-                            <p class="text-sm">${summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} comparte valores de cooperación y trabajo en equipo, creando relaciones armoniosas.` : `${candidateName.split(' ')[0]} puede necesitar ajustar su ritmo para trabajar efectivamente con personas más pausadas.`}</p>
+                            <h3 class="subsection-title text-green-700">Con colegas de Alta Estabilidad (S)</h3>
+                            <p class="text-sm">${summaryProfile.includes('S') ? `${candidateName.split(' ')[0]} comparte valores de cooperación y trabajo en equipo, lo que favorece relaciones armoniosas entre docentes y asistentes.` : `${candidateName.split(' ')[0]} puede necesitar ajustar su ritmo para trabajar bien con colegas más pausados/as y reflexivos/as.`}</p>
                         </div>
 
                         <div class="bg-blue-50 p-4 rounded-lg">
-                            <h3 class="subsection-title text-blue-700">Con Personas de Alto Cumplimiento</h3>
-                            <p class="text-sm">${summaryProfile.includes('C') ? `${candidateName.split(' ')[0]} comparte un enfoque analítico y detallado, funcionando bien en entornos estructurados.` : `${candidateName.split(' ')[0]} puede necesitar más paciencia con los procesos detallados que requieren estas personas.`}</p>
+                            <h3 class="subsection-title text-blue-700">Con colegas de Alto Cumplimiento (C)</h3>
+                            <p class="text-sm">${summaryProfile.includes('C') ? `${candidateName.split(' ')[0]} comparte un enfoque riguroso y detallista, y funciona bien en entornos estructurados y con procedimientos claros.` : `${candidateName.split(' ')[0]} puede necesitar más paciencia con los procesos minuciosos y la documentación que requieren estos/as colegas.`}</p>
                         </div>
                     </div>
                 </div>
@@ -951,11 +952,12 @@
                     <h2 class="section-title">Notas Importantes</h2>
                     <div class="bg-blue-50 p-6 rounded-lg">
                         <ul class="list-disc list-inside space-y-2 text-sm">
-                            <li>Este informe se basa en las respuestas de ${candidateName.split(' ')[0]} al cuestionario DISC, proporcionando una visión detallada de su personalidad y comportamiento en contextos laborales.</li>
-                            <li>Los resultados deben utilizarse como una guía para el desarrollo personal y profesional, no como una limitación de las capacidades individuales.</li>
-                            <li>El comportamiento puede variar según el contexto, la experiencia y el desarrollo personal continuo.</li>
-                            <li>Se recomienda utilizar estos resultados junto con otras evaluaciones y observaciones para obtener una visión completa del individuo.</li>
-                            <li>Este informe es válido en el momento de la evaluación y puede cambiar con el tiempo y las circunstancias.</li>
+                            <li>Este informe se basa en las respuestas de ${candidateName.split(' ')[0]} al cuestionario DISC y ofrece una visión de su estilo conductual en el contexto educativo.</li>
+                            <li>Los resultados deben usarse como una guía para el desarrollo personal y profesional docente, nunca como una etiqueta ni como un límite de las capacidades de la persona.</li>
+                            <li>El comportamiento puede variar según el curso, el nivel, la asignatura, la experiencia y el desarrollo profesional continuo.</li>
+                            <li>Se recomienda complementar estos resultados con la observación de aula, la retroalimentación entre pares y el acompañamiento de la jefatura técnica para obtener una visión completa.</li>
+                            <li>No es un instrumento de evaluación del desempeño ni de selección; su propósito es el autoconocimiento y la mejora de la convivencia y el trabajo en equipo.</li>
+                            <li>Este informe es válido al momento de la evaluación y puede cambiar con el tiempo y las circunstancias.</li>
                         </ul>
                     </div>
                 </div>
