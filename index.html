@@ -174,6 +174,7 @@
                 <button id="generateReport" class="btn-primary" onclick="generateReport()" disabled>
                     Generar Informe Completo
                 </button>
+                <button type="button" onclick="showDatabase()" class="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 rounded ml-2">📊 Ver base de datos</button>
             </div>
         </div>
     </div>
@@ -184,7 +185,29 @@
             <div class="text-center mt-8 space-x-4">
                 <button onclick="showEvaluation()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded">Realizar Nueva Evaluación</button>
                 <button onclick="downloadPDF()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded">Descargar Informe como PDF</button>
+                <button onclick="showDatabase()" class="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 rounded">📊 Base de datos</button>
             </div>
+        </div>
+    </div>
+    <!-- Database Section -->
+    <div id="database-section" class="evaluation-container">
+        <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-lg mt-8">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Base de Datos de Resultados</h1>
+                <h2 class="text-lg font-semibold text-gray-600 mt-2">Registro de evaluaciones DISC para análisis posterior</h2>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4 text-sm text-amber-800">
+                <strong>ℹ️ Importante:</strong> Los registros se guardan en el almacenamiento local de <em>este navegador y dispositivo</em>. Para conservar un respaldo o analizarlos en Excel, usa <strong>Exportar CSV</strong> periódicamente. Si configuras la sincronización con Google Sheets (ver instrucciones del proyecto), además se enviarán a una planilla central.
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4 items-center">
+                <span id="dbCount" class="font-semibold text-gray-700"></span>
+                <div class="flex-grow"></div>
+                <button onclick="exportRecordsCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">⬇️ Exportar CSV (Excel)</button>
+                <button onclick="exportRecordsJSON()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">⬇️ Exportar JSON</button>
+                <button onclick="clearDatabase()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm">🗑️ Vaciar base</button>
+                <button onclick="showEvaluation()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">← Volver al cuestionario</button>
+            </div>
+            <div id="databaseContent" class="overflow-x-auto"></div>
         </div>
     </div>
     <script>
@@ -216,6 +239,142 @@
         ];
         let responses = {};
         let completedBlocks = 0;
+
+        // ===================== BASE DE DATOS DE RESULTADOS =====================
+        // Clave de almacenamiento local (en este navegador/dispositivo).
+        const DB_STORAGE_KEY = 'disc_registros_v1';
+        // (OPCIONAL) Sincronización central con Google Sheets:
+        // Pega aquí la URL de tu Web App de Google Apps Script para que cada
+        // resultado se envíe también a una planilla central. Déjalo vacío ('')
+        // para usar solo el almacenamiento local.
+        const SHEETS_WEBHOOK_URL = '';
+
+        function getRecords() {
+            try { return JSON.parse(localStorage.getItem(DB_STORAGE_KEY)) || []; }
+            catch (e) { return []; }
+        }
+
+        function saveEvaluationRecord(record) {
+            // 1) Guardado local
+            try {
+                const records = getRecords();
+                records.push(record);
+                localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(records));
+            } catch (e) {
+                console.warn('No se pudo guardar en el almacenamiento local:', e);
+            }
+            // 2) Envío opcional a Google Sheets (si está configurado)
+            if (SHEETS_WEBHOOK_URL) {
+                try {
+                    fetch(SHEETS_WEBHOOK_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(record)
+                    }).catch(err => console.warn('No se pudo sincronizar con Sheets:', err));
+                } catch (e) { console.warn('Error enviando a Sheets:', e); }
+            }
+        }
+
+        // Orden y etiquetas de las columnas para exportación y tabla
+        const DB_COLUMNS = [
+            ['fechaRegistro', 'Registrado'],
+            ['nombre', 'Nombre'],
+            ['cargo', 'Cargo/Función'],
+            ['genero', 'Género'],
+            ['fechaAnalisis', 'Fecha análisis'],
+            ['perfilResumen', 'Perfil (resumen)'],
+            ['perfilInterno', 'Perfil interno'],
+            ['perfilExterno', 'Perfil externo'],
+            ['I_D','Int D'],['I_I','Int I'],['I_S','Int S'],['I_C','Int C'],
+            ['E_D','Ext D'],['E_I','Ext I'],['E_S','Ext S'],['E_C','Ext C'],
+            ['R_D','Res D'],['R_I','Res I'],['R_S','Res S'],['R_C','Res C'],
+            ['tensionMax','Tensión máx %']
+        ];
+
+        function showDatabase() {
+            document.getElementById('evaluation-section').classList.remove('active');
+            document.getElementById('report-section').classList.remove('active');
+            document.getElementById('database-section').classList.add('active');
+            renderDatabase();
+        }
+
+        function renderDatabase() {
+            const records = getRecords().slice().reverse(); // más recientes primero
+            document.getElementById('dbCount').textContent = `Total de registros: ${records.length}`;
+            const container = document.getElementById('databaseContent');
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Aún no hay evaluaciones registradas. Cuando alguien complete el cuestionario y genere su informe, el resultado quedará guardado aquí automáticamente.</p>';
+                return;
+            }
+            const headerCols = ['Nombre','Cargo/Función','Registrado','Perfil','D','I','S','C','Tensión','']
+                .map(h => `<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 border-b">${h}</th>`).join('');
+            const rows = records.map(r => {
+                const fecha = r.fechaRegistro ? new Date(r.fechaRegistro).toLocaleString('es-CL') : '';
+                return `<tr class="hover:bg-gray-50">
+                    <td class="px-3 py-2 text-sm border-b">${r.nombre || ''}</td>
+                    <td class="px-3 py-2 text-sm border-b">${r.cargo || ''}</td>
+                    <td class="px-3 py-2 text-xs text-gray-500 border-b">${fecha}</td>
+                    <td class="px-3 py-2 text-sm font-semibold border-b">${r.perfilResumen || ''}</td>
+                    <td class="px-3 py-2 text-sm text-center border-b text-red-600">${r.R_D}</td>
+                    <td class="px-3 py-2 text-sm text-center border-b text-yellow-600">${r.R_I}</td>
+                    <td class="px-3 py-2 text-sm text-center border-b text-green-600">${r.R_S}</td>
+                    <td class="px-3 py-2 text-sm text-center border-b text-blue-600">${r.R_C}</td>
+                    <td class="px-3 py-2 text-sm text-center border-b">${r.tensionMax}%</td>
+                    <td class="px-3 py-2 text-sm border-b"><button onclick="deleteRecord('${r.id}')" class="text-red-500 hover:text-red-700" title="Eliminar registro">✕</button></td>
+                </tr>`;
+            }).join('');
+            container.innerHTML = `<table class="w-full border-collapse"><thead><tr>${headerCols}</tr></thead><tbody>${rows}</tbody></table>`;
+        }
+
+        function deleteRecord(id) {
+            if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
+            const records = getRecords().filter(r => r.id !== id);
+            localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(records));
+            renderDatabase();
+        }
+
+        function clearDatabase() {
+            const records = getRecords();
+            if (records.length === 0) { alert('La base de datos ya está vacía.'); return; }
+            if (!confirm(`¿Seguro que quieres borrar TODOS los ${records.length} registros? Te recomendamos exportar antes a CSV. Esta acción no se puede deshacer.`)) return;
+            localStorage.removeItem(DB_STORAGE_KEY);
+            renderDatabase();
+        }
+
+        function csvEscape(value) {
+            const s = (value === null || value === undefined) ? '' : String(value);
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+
+        function exportRecordsCSV() {
+            const records = getRecords();
+            if (records.length === 0) { alert('No hay registros para exportar.'); return; }
+            const sep = ';'; // separador amigable con Excel en configuración regional chilena
+            const header = DB_COLUMNS.map(c => csvEscape(c[1])).join(sep);
+            const lines = records.map(r => DB_COLUMNS.map(c => csvEscape(r[c[0]])).join(sep));
+            // 'sep=;' ayuda a Excel a reconocer el separador; BOM para acentos correctos
+            const csv = '\ufeff' + 'sep=' + sep + '\n' + header + '\n' + lines.join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            descargarArchivo(blob, `resultados_disc_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function exportRecordsJSON() {
+            const records = getRecords();
+            if (records.length === 0) { alert('No hay registros para exportar.'); return; }
+            const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json;charset=utf-8;' });
+            descargarArchivo(blob, `resultados_disc_${new Date().toISOString().slice(0,10)}.json`);
+        }
+
+        function descargarArchivo(blob, nombre) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = nombre;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        // ===================================================================
         function initializeQuestions() {
             const container = document.getElementById('questionsContainer');
 
@@ -972,6 +1131,27 @@
             document.getElementById('externalProfileSection').classList.remove('hidden-section');
             document.getElementById('summaryProfileSection').classList.remove('hidden-section');
             document.getElementById('changePatternSection').classList.remove('hidden-section');
+
+            // Guardar el registro en la base de datos para análisis posterior
+            const tensionMax = Math.max(
+                Math.abs(changePattern.D), Math.abs(changePattern.I),
+                Math.abs(changePattern.S), Math.abs(changePattern.C)
+            );
+            saveEvaluationRecord({
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+                fechaRegistro: new Date().toISOString(),
+                nombre: candidateName,
+                cargo: position,
+                genero: gender,
+                fechaAnalisis: analysisDate,
+                perfilInterno: internalProfile,
+                perfilExterno: externalProfile,
+                perfilResumen: summaryProfile,
+                I_D: internalNormalized.D, I_I: internalNormalized.I, I_S: internalNormalized.S, I_C: internalNormalized.C,
+                E_D: externalNormalized.D, E_I: externalNormalized.I, E_S: externalNormalized.S, E_C: externalNormalized.C,
+                R_D: summaryScores.D, R_I: summaryScores.I, R_S: summaryScores.S, R_C: summaryScores.C,
+                tensionMax: tensionMax
+            });
         }
 
         function getTraitDescription(trait, isPermanent) {
@@ -1003,6 +1183,7 @@
 
         function showEvaluation() {
             document.getElementById('report-section').classList.remove('active');
+            document.getElementById('database-section').classList.remove('active');
             document.getElementById('evaluation-section').classList.add('active');
 
             // Reset form
