@@ -197,7 +197,7 @@
                 <h2 class="text-lg font-semibold text-gray-600 mt-2">Registro de evaluaciones DISC para análisis posterior</h2>
             </div>
             <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4 text-sm text-amber-800">
-                <strong>ℹ️ Importante:</strong> Los registros se guardan en el almacenamiento local de <em>este navegador y dispositivo</em>. Para conservar un respaldo o analizarlos en Excel, usa <strong>Exportar CSV</strong> periódicamente. Si configuras la sincronización con Google Sheets (ver instrucciones del proyecto), además se enviarán a una planilla central.
+                <strong>ℹ️ Cómo funciona:</strong> Si está configurado el servidor central (Cloudflare Worker, igual que el termómetro emocional), aquí ves <em>todas</em> las evaluaciones de cualquier dispositivo. Mientras no lo configures, cada equipo guarda sus propios registros localmente como respaldo. Usa <strong>Exportar CSV</strong> para analizar en Excel. Las instrucciones para activar el servidor central están en el archivo <code>BASE_DE_DATOS.md</code> del proyecto.
             </div>
             <div class="flex flex-wrap gap-3 mb-4 items-center">
                 <span id="dbCount" class="font-semibold text-gray-700"></span>
@@ -241,38 +241,42 @@
         let completedBlocks = 0;
 
         // ===================== BASE DE DATOS DE RESULTADOS =====================
-        // Clave de almacenamiento local (en este navegador/dispositivo).
-        const DB_STORAGE_KEY = 'disc_registros_v1';
-        // (OPCIONAL) Sincronización central con Google Sheets:
-        // Pega aquí la URL de tu Web App de Google Apps Script para que cada
-        // resultado se envíe también a una planilla central. Déjalo vacío ('')
-        // para usar solo el almacenamiento local.
-        const SHEETS_WEBHOOK_URL = '';
+        // Igual que el "termómetro emocional": los resultados se envían a un
+        // "cerebro" central (un Cloudflare Worker) para reunir TODAS las
+        // evaluaciones, desde cualquier dispositivo, en un solo lugar.
+        // Pega abajo la URL de tu Worker. Si lo dejas vacío (""), la app funciona
+        // solo en este dispositivo, guardando localmente como respaldo.
+        // Ej: endpoint: "https://disc.tu-usuario.workers.dev"
+        const CONFIG = { endpoint: "" };
 
-        function getRecords() {
+        // Respaldo local en este navegador (siempre activo)
+        const DB_STORAGE_KEY = 'disc_registros_v1';
+        // Registros actualmente mostrados (para exportar a CSV/JSON)
+        let registrosCargados = [];
+
+        function getLocalRecords() {
             try { return JSON.parse(localStorage.getItem(DB_STORAGE_KEY)) || []; }
             catch (e) { return []; }
         }
 
         function saveEvaluationRecord(record) {
-            // 1) Guardado local
+            // 1) Respaldo local (siempre)
             try {
-                const records = getRecords();
+                const records = getLocalRecords();
                 records.push(record);
                 localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(records));
             } catch (e) {
                 console.warn('No se pudo guardar en el almacenamiento local:', e);
             }
-            // 2) Envío opcional a Google Sheets (si está configurado)
-            if (SHEETS_WEBHOOK_URL) {
+            // 2) Envío al cerebro central (si está configurado)
+            if (CONFIG.endpoint) {
                 try {
-                    fetch(SHEETS_WEBHOOK_URL, {
+                    fetch(CONFIG.endpoint, {
                         method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(record)
-                    }).catch(err => console.warn('No se pudo sincronizar con Sheets:', err));
-                } catch (e) { console.warn('Error enviando a Sheets:', e); }
+                    }).catch(function(){});
+                } catch (e) { console.warn('No se pudo enviar al servidor central:', e); }
             }
         }
 
@@ -296,12 +300,36 @@
             document.getElementById('evaluation-section').classList.remove('active');
             document.getElementById('report-section').classList.remove('active');
             document.getElementById('database-section').classList.add('active');
-            renderDatabase();
+            cargarYMostrarRegistros();
         }
 
-        function renderDatabase() {
-            const records = getRecords().slice().reverse(); // más recientes primero
-            document.getElementById('dbCount').textContent = `Total de registros: ${records.length}`;
+        function cargarYMostrarRegistros() {
+            const container = document.getElementById('databaseContent');
+            document.getElementById('dbCount').textContent = '';
+            if (CONFIG.endpoint) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Cargando registros desde el servidor central…</p>';
+                fetch(CONFIG.endpoint, { cache: 'no-store' })
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        const registros = Array.isArray(data) ? data : (data.registros || data.records || []);
+                        registrosCargados = registros;
+                        pintarTabla(registros, 'servidor central');
+                    })
+                    .catch(function(){
+                        const locales = getLocalRecords();
+                        registrosCargados = locales;
+                        pintarTabla(locales, 'local (no se pudo conectar al servidor)');
+                    });
+            } else {
+                const locales = getLocalRecords();
+                registrosCargados = locales;
+                pintarTabla(locales, 'este dispositivo');
+            }
+        }
+
+        function pintarTabla(registros, origen) {
+            const records = registros.slice().reverse(); // más recientes primero
+            document.getElementById('dbCount').textContent = `Total de registros: ${records.length}  ·  Origen: ${origen}`;
             const container = document.getElementById('databaseContent');
             if (records.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 text-center py-8">Aún no hay evaluaciones registradas. Cuando alguien complete el cuestionario y genere su informe, el resultado quedará guardado aquí automáticamente.</p>';
@@ -329,17 +357,35 @@
 
         function deleteRecord(id) {
             if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
-            const records = getRecords().filter(r => r.id !== id);
+            // Local (respaldo)
+            const records = getLocalRecords().filter(r => r.id !== id);
             localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(records));
-            renderDatabase();
+            // Servidor central
+            if (CONFIG.endpoint) {
+                fetch(CONFIG.endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accion: 'eliminar', id: id })
+                }).then(function(){ cargarYMostrarRegistros(); })
+                  .catch(function(){ cargarYMostrarRegistros(); });
+            } else {
+                cargarYMostrarRegistros();
+            }
         }
 
         function clearDatabase() {
-            const records = getRecords();
-            if (records.length === 0) { alert('La base de datos ya está vacía.'); return; }
-            if (!confirm(`¿Seguro que quieres borrar TODOS los ${records.length} registros? Te recomendamos exportar antes a CSV. Esta acción no se puede deshacer.`)) return;
+            if (!confirm('¿Seguro que quieres borrar TODOS los registros? Te recomendamos exportar antes a CSV. Esta acción no se puede deshacer.')) return;
             localStorage.removeItem(DB_STORAGE_KEY);
-            renderDatabase();
+            if (CONFIG.endpoint) {
+                fetch(CONFIG.endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accion: 'vaciar' })
+                }).then(function(){ cargarYMostrarRegistros(); })
+                  .catch(function(){ cargarYMostrarRegistros(); });
+            } else {
+                cargarYMostrarRegistros();
+            }
         }
 
         function csvEscape(value) {
@@ -348,7 +394,7 @@
         }
 
         function exportRecordsCSV() {
-            const records = getRecords();
+            const records = registrosCargados.length ? registrosCargados : getLocalRecords();
             if (records.length === 0) { alert('No hay registros para exportar.'); return; }
             const sep = ';'; // separador amigable con Excel en configuración regional chilena
             const header = DB_COLUMNS.map(c => csvEscape(c[1])).join(sep);
@@ -360,7 +406,7 @@
         }
 
         function exportRecordsJSON() {
-            const records = getRecords();
+            const records = registrosCargados.length ? registrosCargados : getLocalRecords();
             if (records.length === 0) { alert('No hay registros para exportar.'); return; }
             const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json;charset=utf-8;' });
             descargarArchivo(blob, `resultados_disc_${new Date().toISOString().slice(0,10)}.json`);
