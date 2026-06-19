@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Adivina el Estilo DISC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14161d;
+    --ink-2:#191c25;
+    --surface:#1e212b;
+    --surface-2:#252936;
+    --line:#2f3442;
+    --cloud:#f2f3f7;
+    --mist:#9aa0b0;
+    --mist-2:#6f7585;
+
+    --d:#ff5a5f;   /* Dominancia */
+    --i:#ffb23e;   /* Influencia */
+    --s:#3dcfa0;   /* Estabilidad */
+    --c:#4d9bff;   /* Cumplimiento */
+
+    --d-soft:rgba(255,90,95,.14);
+    --i-soft:rgba(255,178,62,.14);
+    --s-soft:rgba(61,207,160,.14);
+    --c-soft:rgba(77,155,255,.14);
+
+    --ok:#3dcfa0;
+    --no:#ff5a5f;
+    --radius:18px;
+    --shadow:0 18px 50px -22px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1c2030 0%, var(--ink) 55%) fixed;
+    color:var(--cloud);
+    min-height:100dvh;
+    display:flex;
+    justify-content:center;
+    padding:max(18px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));
+    line-height:1.45;
+  }
+
+  .app{
+    width:100%;
+    max-width:460px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+
+  /* ---------- Brand / header ---------- */
+  .brand{display:flex;align-items:center;gap:11px;justify-content:center;padding-top:6px}
+  .mark{
+    width:34px;height:34px;border-radius:9px;
+    display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+    gap:2.5px;padding:3px;background:var(--ink-2);
+    box-shadow:inset 0 0 0 1px var(--line);
+  }
+  .mark span{border-radius:3px}
+  .mark .m-d{background:var(--d)} .mark .m-i{background:var(--i)}
+  .mark .m-c{background:var(--c)} .mark .m-s{background:var(--s)}
+  .brand b{font-family:'Bricolage Grotesque';font-weight:800;letter-spacing:.22em;font-size:.82rem;color:var(--mist)}
+
+  /* ---------- Card shell ---------- */
+  .screen{
+    background:linear-gradient(180deg,var(--surface) 0%, var(--ink-2) 100%);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:24px 20px 22px;
+    animation:rise .42s cubic-bezier(.2,.7,.2,1) both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  .eyebrow{
+    font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--mist-2);margin-bottom:10px;
+  }
+  h1{
+    font-family:'Bricolage Grotesque';font-weight:800;
+    font-size:1.92rem;line-height:1.02;letter-spacing:-.01em;margin-bottom:10px;
+  }
+  h1 em{font-style:normal;background:linear-gradient(90deg,var(--d),var(--i) 36%,var(--s) 68%,var(--c));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{color:var(--mist);font-size:1.02rem}
+
+  /* ---------- Intro how-to ---------- */
+  .how{list-style:none;display:flex;flex-direction:column;gap:12px;margin:20px 0 22px}
+  .how li{display:flex;gap:13px;align-items:flex-start}
+  .how .n{
+    flex:0 0 26px;height:26px;border-radius:8px;background:var(--surface-2);
+    display:grid;place-items:center;font-weight:700;font-size:.84rem;color:var(--cloud);
+    border:1px solid var(--line);margin-top:1px;
+  }
+  .how p{font-size:.96rem;color:var(--cloud)}
+  .how p .dim{color:var(--mist);display:block;font-size:.86rem;margin-top:1px}
+
+  .legend{
+    display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:22px;
+  }
+  .leg{
+    display:flex;gap:9px;align-items:center;padding:10px 11px;border-radius:12px;
+    background:var(--ink);border:1px solid var(--line);
+  }
+  .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+  .leg b{font-size:.86rem;font-weight:700}
+  .leg .lw{font-size:.72rem;color:var(--mist);display:block;font-weight:500}
+  .leg.d .dot{background:var(--d)} .leg.i .dot{background:var(--i)}
+  .leg.s .dot{background:var(--s)} .leg.c .dot{background:var(--c)}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    width:100%;border:none;cursor:pointer;font-family:inherit;
+    font-weight:700;font-size:1.04rem;color:#10131a;
+    background:var(--cloud);border-radius:14px;padding:16px;
+    transition:transform .12s ease, filter .2s ease;
+  }
+  .btn:active{transform:scale(.985)}
+  .btn:focus-visible{outline:3px solid var(--c);outline-offset:3px}
+  .btn.ghost{background:transparent;color:var(--cloud);border:1px solid var(--line)}
+
+  /* ---------- Progress ---------- */
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .bars{display:flex;gap:5px;flex:1}
+  .bars i{flex:1;height:5px;border-radius:99px;background:var(--surface-2);transition:background .3s}
+  .bars i.done{background:var(--cloud)}
+  .bars i.cur{background:var(--mist)}
+  .count{font-size:.82rem;color:var(--mist);font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+  /* ---------- Question ---------- */
+  .qtag{
+    display:inline-flex;align-items:center;gap:7px;font-size:.74rem;font-weight:600;
+    letter-spacing:.05em;color:var(--mist-2);text-transform:uppercase;margin-bottom:12px;
+  }
+  .qtag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--mist-2)}
+  .scenario{
+    font-family:'Bricolage Grotesque';font-weight:600;font-size:1.34rem;line-height:1.22;
+    letter-spacing:-.01em;min-height:3.2em;display:flex;align-items:center;
+  }
+  .ask{color:var(--mist);font-size:.92rem;margin:16px 0 13px}
+
+  /* ---------- Quadrant answer pad ---------- */
+  .pad{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .opt{
+    position:relative;border:1.5px solid var(--line);background:var(--ink);
+    border-radius:15px;padding:15px 13px;text-align:left;cursor:pointer;
+    font-family:inherit;color:var(--cloud);overflow:hidden;
+    transition:transform .12s ease,border-color .2s ease,background .2s ease;
+  }
+  .opt:active{transform:scale(.97)}
+  .opt:focus-visible{outline:3px solid var(--cloud);outline-offset:2px}
+  .opt .ol{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.5rem;line-height:1}
+  .opt .ow{display:block;font-size:.78rem;color:var(--mist);font-weight:600;margin-top:4px}
+  .opt .badge{
+    position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;
+    display:grid;place-items:center;font-size:.8rem;font-weight:800;opacity:0;transform:scale(.5);
+    transition:opacity .25s ease,transform .25s ease;
+  }
+  .opt[data-k="D"] .ol{color:var(--d)} .opt[data-k="I"] .ol{color:var(--i)}
+  .opt[data-k="S"] .ol{color:var(--s)} .opt[data-k="C"] .ol{color:var(--c)}
+
+  /* feedback states */
+  .opt.correct{border-color:var(--ok);background:rgba(61,207,160,.12)}
+  .opt.correct .badge{opacity:1;transform:scale(1);background:var(--ok);color:#0c1512}
+  .opt.wrong{border-color:var(--no);background:rgba(255,90,95,.1)}
+  .opt.wrong .badge{opacity:1;transform:scale(1);background:var(--no);color:#1a0c0d}
+  .opt.muted{opacity:.42}
+  .pad.locked .opt{cursor:default}
+  .opt.correct.pulse{animation:pulse .5s ease}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,207,160,.45)}100%{box-shadow:0 0 0 14px rgba(61,207,160,0)}}
+
+  /* ---------- Explain panel ---------- */
+  .explain{
+    margin-top:16px;border-radius:14px;padding:15px 15px 16px;border:1px solid var(--line);
+    background:var(--ink);animation:rise .35s ease both;
+  }
+  .explain .head{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+  .explain .pill{
+    font-size:.72rem;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:99px;
+  }
+  .explain .verdict{font-weight:700;font-size:.96rem}
+  .explain p{color:var(--mist);font-size:.92rem}
+  .explain p b{color:var(--cloud);font-weight:600}
+  .next{margin-top:15px}
+
+  /* ---------- Results ---------- */
+  .result{text-align:center}
+  .ring{
+    width:148px;height:148px;margin:6px auto 18px;border-radius:50%;
+    display:grid;place-items:center;position:relative;
+    background:conic-gradient(var(--accent) calc(var(--pct)*1%), var(--surface-2) 0);
+  }
+  .ring::after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--ink-2)}
+  .ring .num{position:relative;z-index:1;font-family:'Bricolage Grotesque';font-weight:800;font-size:2.5rem;line-height:1}
+  .ring .num small{display:block;font-size:.8rem;color:var(--mist);font-weight:600;letter-spacing:.04em;margin-top:2px}
+  .tier{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.5rem;margin-bottom:8px}
+  .result .msg{color:var(--mist);font-size:1rem;margin-bottom:20px}
+  .reflect{
+    text-align:left;background:var(--ink);border:1px solid var(--line);border-radius:14px;
+    padding:15px 16px;margin-bottom:18px;
+  }
+  .reflect .rt{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--i);margin-bottom:8px}
+  .reflect ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+  .reflect li{font-size:.94rem;color:var(--cloud);padding-left:18px;position:relative}
+  .reflect li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--s)}
+  .actions{display:flex;flex-direction:column;gap:10px}
+
+  .foot{text-align:center;color:var(--mist-2);font-size:.76rem;padding:0 6px;line-height:1.5}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand">
+    <div class="mark" aria-hidden="true"><span class="m-d"></span><span class="m-i"></span><span class="m-c"></span><span class="m-s"></span></div>
+    <b>TALLER DISC</b>
+  </div>
+
+  <main id="root"></main>
+
+  <p class="foot">Dinámica de aprendizaje en equipo · El perfil personal se obtiene con el cuestionario DISC completo.</p>
+</div>
+
+<script>
+const ESTILOS = {
+  D:{nombre:"Dominancia", color:"var(--d)"},
+  I:{nombre:"Influencia", color:"var(--i)"},
+  S:{nombre:"Estabilidad", color:"var(--s)"},
+  C:{nombre:"Cumplimiento", color:"var(--c)"}
+};
+
+// 12 casos del mundo escolar · 3 por estilo
+const CASOS = [
+  {t:"En el consejo de profesores que se alarga, propone votar de inmediato y dejar los detalles para despu\u00E9s.", k:"D",
+   e:"Empuja a <b>decidir y avanzar</b> sin perderse en detalles. Tomar el control y apurar el cierre es marca de la Dominancia."},
+  {t:"\u201C\u00BFPara cu\u00E1ndo necesitamos las notas listas? Yo las subo hoy mismo y avanzamos.\u201D", k:"D",
+   e:"Va directo al <b>resultado</b> y al plazo. Esa orientaci\u00F3n a la meta y a la acci\u00F3n es Dominancia."},
+  {t:"Ante un problema de disciplina en su curso, decide la medida al toque y la aplica sin dar vueltas.", k:"D",
+   e:"Resuelve <b>r\u00E1pido y con firmeza</b>, sin titubear. Decidir bajo presi\u00F3n caracteriza a la Dominancia."},
+
+  {t:"En el recreo conversa con medio colegio y siempre llega con una an\u00E9cdota para levantar el \u00E1nimo en la sala de profesores.", k:"I",
+   e:"Energ\u00EDa social y v\u00EDnculo con todos. <b>Levantar el \u00E1nimo</b> del grupo es el sello de la Influencia."},
+  {t:"\u201C\u00A1Se me ocurri\u00F3 una actividad bac\u00E1n para la semana del colegio! J\u00FAntense que la armamos entre todos.\u201D", k:"I",
+   e:"Optimista y persuasiva, suma gente a su idea con <b>entusiasmo</b>. Mueve desde la emoci\u00F3n: Influencia."},
+  {t:"Cuando un colega est\u00E1 desanimado con un curso dif\u00EDcil, lo motiva con humor y le contagia energ\u00EDa.", k:"I",
+   e:"Contagia \u00E1nimo y <b>conecta con las personas</b>. As\u00ED opera la Influencia."},
+
+  {t:"\u201CPor m\u00ED no hay problema, yo cubro la hora del colega que falt\u00F3. Sigamos con la rutina de siempre.\u201D", k:"S",
+   e:"Cooperadora y constante, valora <b>apoyar al equipo</b> y la continuidad. Estilo Estabilidad."},
+  {t:"Cuando la UTP anuncia un cambio repentino de horario, pide que se avise con tiempo para preparar a los estudiantes.", k:"S",
+   e:"Necesita <b>previsibilidad</b>; el cambio brusco le incomoda. Eso caracteriza a la Estabilidad."},
+  {t:"\u201CMe preocupa c\u00F3mo van a recibir los estudiantes el cambio de profesor jefe.\u201D", k:"S",
+   e:"Pone el <b>bienestar de las personas</b> y la armon\u00EDa por delante. Estilo Estabilidad."},
+
+  {t:"\u201CAntes de enviar las calificaciones, revisemos que cada nota cuadre con la planilla.\u201D", k:"C",
+   e:"Prioriza la <b>exactitud</b> y revisar antes de entregar. Estilo Cumplimiento."},
+  {t:"\u201C\u00BFEsto est\u00E1 en el reglamento interno? Necesito ver el protocolo antes de aplicar la medida.\u201D", k:"C",
+   e:"Se apoya en <b>normas y procedimientos</b> antes de actuar. Sello del Cumplimiento."},
+  {t:"Pide tiempo para revisar a fondo la planificaci\u00F3n antes de presentarla en la UTP.", k:"C",
+   e:"Cautela y <b>an\u00E1lisis</b> por sobre la rapidez. Estilo Cumplimiento."}
+];
+
+const ORDEN = ["D","I","C","S"]; // distribuci\u00F3n cl\u00E1sica del cuadrante DISC
+
+let mazo=[], idx=0, aciertos=0, fallos={D:0,I:0,S:0,C:0};
+
+const root = document.getElementById('root');
+
+function barajar(a){const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]];}return x;}
+
+function intro(){
+  root.innerHTML = `
+    <section class="screen">
+      <div class="eyebrow">Dinámica · 5 min · desde tu celular</div>
+      <h1>Adivina el <em>estilo</em></h1>
+      <p class="lede">Lee la situaci\u00F3n y reconoce qu\u00E9 estilo DISC aparece. Recibes una pista al instante.</p>
+
+      <ol class="how">
+        <li><span class="n">1</span><p>Aparece una situaci\u00F3n t\u00EDpica del d\u00EDa a d\u00EDa en el colegio.<span class="dim">Doce casos en total.</span></p></li>
+        <li><span class="n">2</span><p>Toca el estilo que crees que representa.<span class="dim">D, I, S o C.</span></p></li>
+        <li><span class="n">3</span><p>Descubre la respuesta y por qu\u00E9. Al final, conversen en grupo.</p></li>
+      </ol>
+
+      <div class="legend">
+        <div class="leg d"><span class="dot"></span><b>D <span class="lw">Dominancia</span></b></div>
+        <div class="leg i"><span class="dot"></span><b>I <span class="lw">Influencia</span></b></div>
+        <div class="leg s"><span class="dot"></span><b>S <span class="lw">Estabilidad</span></b></div>
+        <div class="leg c"><span class="dot"></span><b>C <span class="lw">Cumplimiento</span></b></div>
+      </div>
+
+      <button class="btn" id="go">Comenzar</button>
+    </section>`;
+  document.getElementById('go').onclick = empezar;
+}
+
+function empezar(){
+  mazo = barajar(CASOS);
+  idx = 0; aciertos = 0; fallos={D:0,I:0,S:0,C:0};
+  pregunta();
+}
+
+function pregunta(){
+  const caso = mazo[idx];
+  const bars = mazo.map((_,i)=>{
+    const cls = i<idx ? 'done' : (i===idx ? 'cur' : '');
+    return `<i class="${cls}"></i>`;
+  }).join('');
+
+  const opts = ORDEN.map(k=>`
+    <button class="opt" data-k="${k}" aria-label="${ESTILOS[k].nombre}">
+      <span class="ol">${k}</span>
+      <span class="ow">${ESTILOS[k].nombre}</span>
+      <span class="badge"></span>
+    </button>`).join('');
+
+  root.innerHTML = `
+    <section class="screen">
+      <div class="top">
+        <div class="bars">${bars}</div>
+        <span class="count">${idx+1} / ${mazo.length}</span>
+      </div>
+      <div class="qtag">La situaci\u00F3n</div>
+      <div class="scenario">${caso.t}</div>
+      <p class="ask">\u00BFQu\u00E9 estilo DISC reconoces?</p>
+      <div class="pad" id="pad">${opts}</div>
+      <div id="slot"></div>
+    </section>`;
+
+  const pad = document.getElementById('pad');
+  pad.querySelectorAll('.opt').forEach(b=>{
+    b.onclick = ()=>responder(b.dataset.k, caso);
+  });
+}
+
+function responder(elegido, caso){
+  const pad = document.getElementById('pad');
+  if(pad.classList.contains('locked')) return;
+  pad.classList.add('locked');
+
+  const correcto = caso.k;
+  const acerto = elegido === correcto;
+  if(acerto){ aciertos++; } else { fallos[correcto]++; }
+
+  pad.querySelectorAll('.opt').forEach(b=>{
+    const k=b.dataset.k;
+    if(k===correcto){
+      b.classList.add('correct','pulse');
+      b.querySelector('.badge').textContent='\u2713';
+    } else if(k===elegido){
+      b.classList.add('wrong');
+      b.querySelector('.badge').textContent='\u2715';
+    } else {
+      b.classList.add('muted');
+    }
+  });
+
+  const col = ESTILOS[correcto].color;
+  const verdict = acerto
+    ? `<span class="verdict" style="color:var(--ok)">\u00A1Correcto!</span>`
+    : `<span class="verdict" style="color:var(--no)">Era ${correcto} \u00B7 ${ESTILOS[correcto].nombre}</span>`;
+
+  const slot = document.getElementById('slot');
+  slot.innerHTML = `
+    <div class="explain">
+      <div class="head">
+        <span class="pill" style="background:${col};color:#10131a">${correcto} \u00B7 ${ESTILOS[correcto].nombre}</span>
+        ${verdict}
+      </div>
+      <p>${caso.e}</p>
+      <button class="btn next" id="next">${idx < mazo.length-1 ? 'Siguiente' : 'Ver resultado'}</button>
+    </div>`;
+  document.getElementById('next').onclick = ()=>{
+    idx++;
+    if(idx < mazo.length) pregunta(); else resultado();
+  };
+}
+
+function resultado(){
+  const total = mazo.length;
+  const pct = Math.round((aciertos/total)*100);
+  let accent='var(--s)', tier='', msg='';
+  if(pct>=83){ accent='var(--s)'; tier='\u00A1Ojo cl\u00EDnico DISC!'; msg='Lees muy bien los estilos de las personas. Esa sensibilidad es oro para coordinar un equipo.'; }
+  else if(pct>=58){ accent='var(--c)'; tier='Vas leyendo bien al equipo'; msg='Distingues los estilos con soltura. Con un poco m\u00E1s de pr\u00E1ctica, los reconocer\u00E1s al vuelo.'; }
+  else if(pct>=33){ accent='var(--i)'; tier='Buen comienzo'; msg='Ya captas las se\u00F1ales principales. Vuelve a jugar y fíjate en las palabras clave de cada estilo.'; }
+  else { accent='var(--d)'; tier='Reci\u00E9n calentando'; msg='Cada estilo tiene su huella: directo (D), social (I), estable (S), preciso (C). \u00A1A practicar!'; }
+
+  // estilo que m\u00E1s cost\u00F3 reconocer
+  let peor=null, max=0;
+  for(const k in fallos){ if(fallos[k]>max){ max=fallos[k]; peor=k; } }
+  const costoLinea = peor
+    ? `\u00BFQu\u00E9 hace que el estilo <b style="color:${ESTILOS[peor].color}">${ESTILOS[peor].nombre}</b> sea m\u00E1s dif\u00EDcil de reconocer para ti?`
+    : `\u00BFCu\u00E1l de los cuatro estilos te resulta m\u00E1s f\u00E1cil de detectar y por qu\u00E9?`;
+
+  root.innerHTML = `
+    <section class="screen result">
+      <div class="eyebrow">Tu resultado</div>
+      <div class="ring" style="--pct:${pct};--accent:${accent}">
+        <div class="num">${aciertos}<small>de ${total}</small></div>
+      </div>
+      <div class="tier">${tier}</div>
+      <p class="msg">${msg}</p>
+
+      <div class="reflect">
+        <div class="rt">Para conversar en grupo</div>
+        <ul>
+          <li>${costoLinea}</li>
+          <li>\u00BFCu\u00E1l de los cuatro estilos se parece m\u00E1s a c\u00F3mo act\u00FAas t\u00FA?</li>
+          <li>\u00BFC\u00F3mo cambiar\u00EDas tu forma de comunicar con un compa\u00F1ero de estilo opuesto al tuyo?</li>
+        </ul>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="again">Jugar de nuevo</button>
+      </div>
+    </section>`;
+  document.getElementById('again').onclick = empezar;
+}
+
+intro();
+</script>
+</body>
+</html>
