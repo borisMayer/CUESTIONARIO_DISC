@@ -171,7 +171,7 @@
             <!-- Questions Container -->
             <div id="questionsContainer"></div>
             <div class="text-center mt-6">
-                <button id="generateReport" class="btn-primary" onclick="generateReport()" disabled>
+                <button id="generateReport" class="btn-primary" onclick="generateReport()">
                     Generar Informe Completo
                 </button>
                 <button type="button" onclick="showDatabase()" class="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 rounded ml-2">📊 Ver base de datos</button>
@@ -473,13 +473,21 @@
             updateProgress();
         }
         function updateProgress() {
+            const previo = completedBlocks;
             completedBlocks = Object.keys(responses).length;
-            const progress = (completedBlocks / discQuestions.length) * 100;
+            const total = discQuestions.length;
+            const progress = (completedBlocks / total) * 100;
 
             document.getElementById('progressBar').style.width = progress + '%';
-            document.getElementById('progressText').textContent = `${completedBlocks} de ${discQuestions.length} bloques completados`;
+            document.getElementById('progressText').textContent = `${completedBlocks} de ${total} bloques completados`;
 
-            document.getElementById('generateReport').disabled = completedBlocks < discQuestions.length;
+            // El botón queda siempre disponible: si faltan bloques, al pulsarlo se avisa cuáles.
+            document.getElementById('generateReport').disabled = false;
+
+            // Entrega automática del informe completo al terminar la encuesta
+            if (completedBlocks === total && previo < total) {
+                setTimeout(generateReport, 200);
+            }
         }
         function calculateDISCScores() {
             let internalScores = {D: 0, I: 0, S: 0, C: 0};
@@ -585,6 +593,26 @@
         }
 
         function generateReport() {
+            // Verificar que la encuesta esté completa antes de entregar el informe
+            const totalBloques = discQuestions.length;
+            const faltantes = [];
+            for (let i = 0; i < totalBloques; i++) {
+                if (!responses[i]) faltantes.push(i + 1);
+            }
+            if (faltantes.length > 0) {
+                alert('Para entregar el informe completo faltan ' + faltantes.length +
+                      ' bloque(s) por responder. En cada bloque debes marcar una opción en "Más como yo" y otra distinta en "Menos como yo".\n\nBloques pendientes: ' + faltantes.join(', '));
+                const blocks = document.querySelectorAll('.question-block');
+                const primero = blocks[faltantes[0] - 1];
+                if (primero) {
+                    primero.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    primero.style.outline = '3px solid #f59e0b';
+                    primero.style.borderRadius = '8px';
+                    setTimeout(function(){ primero.style.outline = ''; }, 2600);
+                }
+                return;
+            }
+
             const candidateName = document.getElementById('candidateName').value || 'Candidato';
             const analysisDate = document.getElementById('analysisDate').value;
             const gender = document.getElementById('gender').value || 'No especificado';
